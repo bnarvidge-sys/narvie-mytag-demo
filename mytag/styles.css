@@ -65,3 +65,7 @@
   .support-copy{font-size:12px}
 }
 @media(display-mode:standalone){.topbar{border-bottom:1px solid var(--line)}}
+
+/* Real tracker screen: independent of demo data and schematic maps. */
+.live-card{max-width:760px;overflow-wrap:anywhere}.live-card>p{font-size:14px;line-height:1.75}.live-card h2{margin-top:12px}.live-state-label{font-size:12px;font-weight:700;color:#37583b;background:#eef2e3;padding:9px 12px;border-radius:9px;display:inline-block}.live-error{background:#fff1e8;color:#80442d;border-radius:10px;padding:12px 14px;font-size:14px!important;line-height:1.65}.live-actions{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}.live-card .soft-notice{display:block;margin:18px 0;line-height:1.7}.live-card ul{padding-left:22px}.live-card form{margin:20px 0}.live-card .text-input{width:100%;max-width:480px;font-size:16px}.live-card .field-hint{font-size:12px;line-height:1.65;margin:12px 0}.live-values{display:grid;grid-template-columns:minmax(120px,1fr) 2fr;gap:12px;font-size:14px;line-height:1.5}.live-values dt{color:var(--muted)}.live-values dd{margin:0}.live-card>button.text-button{margin-top:18px;min-height:44px}
+@media(max-width:700px){.bottom-nav{gap:4px}.bottom-nav .nav-item{width:auto;flex:1;font-size:10px;min-width:0}.live-card>p{font-size:13px}.live-values{font-size:12px;grid-template-columns:1fr 1.25fr}.live-actions>.button{width:100%}.live-card .soft-notice{font-size:12px}}

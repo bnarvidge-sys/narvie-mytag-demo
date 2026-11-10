@@ -1,9 +1,9 @@
 // Only this app's declared static assets. No API/auth/location responses.
 const CACHE_PREFIX = 'narvie-mytag-pwa:/mytag/:';
-const CACHE = CACHE_PREFIX + '0.2.0';
+const CACHE = CACHE_PREFIX + '0.3.0';
 const ASSET_PATHS = [
   './', './index.html', './installeren.html', './installeren.css', './installeren.js',
-  './styles.css', './app.js', './store.js', './adapters.js', './routes.js', './pwa.js',
+  './live.js', './styles.css', './app.js', './store.js', './adapters.js', './routes.js', './pwa.js',
   './assets/map.svg', './assets/icon.svg', './assets/install-qr.png', './manifest.webmanifest',
   './assets/icons/apple-touch-icon.png', './assets/icons/narvie-tags-192.png',
   './assets/icons/narvie-tags-512.png', './assets/icons/narvie-tags-maskable-512.png',

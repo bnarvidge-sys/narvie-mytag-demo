@@ -1,4 +1,4 @@
-const pages = {home:'trackers', help:'hulp', settings:'instellingen'};
+const pages = {home:'trackers', live:'echte-tracker', help:'hulp', settings:'instellingen'};
 export function routeFor(page, id) {
   return page === 'detail' ? '#tracker/' + encodeURIComponent(id) : '#' + (pages[page] || pages.home);
 }

@@ -1,5 +1,6 @@
 import {loadState, saveState, initialState, escapeHtml as esc, ageLabel, filterTrackers, makeDemoTracker} from './store.js';
 import {DemoTrackerService} from './adapters.js';
+import {liveScreen, liveAction} from './live.js';
 import {routeFor, parseRoute} from './routes.js';
 import {installationState, requestInstallation, activateUpdate} from './pwa.js';
 
@@ -72,7 +73,7 @@ function shell(){
     <a class="wordmark" href="#home" data-action="nav" data-page="home" aria-label="Narvie, naar mijn trackers"><img src="assets/icon.svg" alt="" width="34" height="34"><span>narvie<span class="brand-dot">.</span></span></a>
     <div class="sidebar-label">JOUW DAG, GERUST.</div>
     <nav class="side-nav" aria-label="Hoofdnavigatie">${navItems()}</nav>
-    <div class="sidebar-bottom"><div class="mini-tag">${icon('shield')}</div><strong>Dicht bij wat telt.</strong><p>Een vertrouwd gevoel.<br>Waar je ook bent.</p><div class="version">Narvie Trackers <span>v0.2</span></div></div>
+    <div class="sidebar-bottom"><div class="mini-tag">${icon('shield')}</div><strong>Dicht bij wat telt.</strong><p>Een vertrouwd gevoel.<br>Waar je ook bent.</p><div class="version">Narvie Trackers <span>v0.3</span></div></div>
   </aside>
   <div class="workspace">
     <div class="demo-strip"><span><span class="demo-dot"></span><strong>Voorbeeldgegevens</strong><span class="demo-description">Echte tracker nog niet gekoppeld</span></span><button data-action="about-demo">Meer info ${icon('chevron')}</button></div>
@@ -84,15 +85,18 @@ function shell(){
   renderMain();
   updatePWAUI();
 }
-function navItems(){return [['home','pin','Mijn trackers'],['help','help','Hulp'],['settings','settings','Instellingen']].map(([page,i,label])=>`<button data-action="nav" data-page="${page}" class="nav-item ${ui.page===page||(ui.page==='detail'&&page==='home')?'active':''}" ${ui.page===page?'aria-current="page"':''}>${icon(i)}<span>${label}</span>${page==='home'?'<span class="nav-count">'+state.trackers.length+'</span>':''}</button>`).join('');}
+function navItems(){return [['home','pin','Voorbeelden'],['live','bluetooth','Mijn tracker'],['help','help','Hulp'],['settings','settings','Instellingen']].map(([page,i,label])=>`<button data-action="nav" data-page="${page}" class="nav-item ${ui.page===page||(ui.page==='detail'&&page==='home')?'active':''}" ${ui.page===page?'aria-current="page"':''}>${icon(i)}<span>${label}</span>${page==='home'?'<span class="nav-count">'+state.trackers.length+'</span>':''}</button>`).join('');}
 function renderNav(){document.querySelectorAll('.side-nav,.bottom-nav').forEach(n=>n.innerHTML=navItems());}
 function renderMain(){
   const main=document.querySelector('#main');
-  document.title=`Narvie Trackers · ${ui.page==='detail'?(current()?.name||'Tracker'):ui.page==='help'?'Hulp':ui.page==='settings'?'Instellingen':'Mijn trackers'}`;
-  document.querySelector('#breadcrumb-page').textContent=ui.page==='detail'?'Tracker bekijken':ui.page==='help'?'Hulp':ui.page==='settings'?'Instellingen':'Mijn trackers';
+  document.title=`Narvie Trackers · ${ui.page==='detail'?(current()?.name||'Tracker'):ui.page==='help'?'Hulp':ui.page==='settings'?'Instellingen':ui.page==='live'?'Mijn echte tracker':'Mijn trackers'}`;
+  document.querySelector('#breadcrumb-page').textContent=ui.page==='detail'?'Tracker bekijken':ui.page==='help'?'Hulp':ui.page==='settings'?'Instellingen':ui.page==='live'?'Mijn echte tracker':'Mijn trackers';
   renderNav();
   if(ui.page==='detail'&&!current())ui.page='home';
-  main.innerHTML=ui.page==='home'?home():ui.page==='detail'?detail():ui.page==='help'?help():settings();
+  main.innerHTML=ui.page==='live'?liveScreen():ui.page==='home'?home():ui.page==='detail'?detail():ui.page==='help'?help():settings();
+  const notifications=document.querySelector('.notification-button');if(notifications)notifications.hidden=ui.page==='live';
+  const strip=document.querySelector('.demo-strip');
+  if(strip)strip.innerHTML=ui.page==='live'?'<span><span class="demo-dot"></span><strong>Persoonlijke trackertest</strong><span class="demo-description">Alleen echte API-resultaten</span></span>':'<span><span class="demo-dot"></span><strong>Voorbeeldgegevens</strong><span class="demo-description">Echte tracker nog niet gekoppeld</span></span><button data-action="about-demo">Meer info</button>';
   updateMapZoom();
   updatePWAUI();
 }
@@ -150,13 +154,13 @@ function help(){return `<section class="page-heading"><div><div class="eyebrow">
   ].map(([q,a])=>`<details><summary>${q}${icon('plus')}</summary><p>${a}</p></details>`).join('')}</div><section class="settings-card"><h2>We helpen je op weg.</h2><p class="support-copy">Vraag over de app? Vermeld je toestel en browser.</p><a class="text-button support-email" href="mailto:contact@narvie-tracker.nl?subject=Hulp%20bij%20Narvie%20Trackers">contact@narvie-tracker.nl</a><a class="text-button" href="installeren.html">Op je beginscherm zetten</a></section><div class="help-bottom">${icon('shield')} In deze versie blijven je wijzigingen op dit apparaat.</div>`;}
 function settings(){return `<section class="page-heading"><div><div class="eyebrow">PRECIES ZOALS JIJ HET WILT</div><h1>Jouw instellingen<span>.</span></h1><p>Een helder overzicht, op jouw manier.</p></div></section>
   <section class="settings-card"><h2>Weergave</h2><div class="setting-row"><div><strong>Minder beweging</strong><p>Beperk animaties en overgangen in de app.</p></div><button class="switch ${state.settings.reduceMotion?'on':''}" role="switch" aria-checked="${state.settings.reduceMotion}" aria-label="Minder beweging" data-action="motion"><span></span></button></div><div class="setting-row"><div><strong>Taal</strong><p>Je app staat in het Nederlands.</p></div><span class="setting-value">Nederlands</span></div></section>
-  <section class="settings-card"><h2>Over deze versie</h2><div class="setting-row"><div><strong>Narvie Trackers</strong><p>Telefoonvoorbeeld · 0.2.0</p></div><span class="mode-pill">Voorbeeldmodus</span></div><div class="setting-row"><div><strong>Jouw gegevens</strong><p>Alleen voorbeeldtrackers, lokaal bewaard. Er is nog geen account of cloudsynchronisatie.</p></div>${icon('shield')}</div><div class="setting-row"><div><strong>Opnieuw beginnen</strong><p>Zet de oorspronkelijke drie voorbeeldtrackers terug.</p></div><button class="text-button" data-action="reset">Voorbeeld herstellen</button></div></section>
-  <section class="settings-card"><h2>Op je telefoon</h2><div class="setting-row"><div><strong>Narvie op je beginscherm</strong><p id="app-install-status">Open vanuit je browser of zet Narvie op je beginscherm.</p></div><a class="text-button" href="installeren.html">Installatie-uitleg</a></div><button class="button primary wide" data-action="install-app" hidden>Zet op mijn telefoon</button></section><div class="settings-note">${icon('info')} Een echte tracker koppelen, locatie opvragen en Bluetooth bedienen worden in de volgende fase aangesloten.</div>`;}
+  <section class="settings-card"><h2>Over deze versie</h2><div class="setting-row"><div><strong>Narvie Trackers</strong><p>Telefoontest · 0.3.0</p></div><span class="mode-pill">Voorbeeldmodus</span></div><div class="setting-row"><div><strong>Jouw gegevens</strong><p>Alleen voorbeeldtrackers, lokaal bewaard. Er is nog geen account of cloudsynchronisatie.</p></div>${icon('shield')}</div><div class="setting-row"><div><strong>Opnieuw beginnen</strong><p>Zet de oorspronkelijke drie voorbeeldtrackers terug.</p></div><button class="text-button" data-action="reset">Voorbeeld herstellen</button></div></section>
+  <section class="settings-card"><h2>Op je telefoon</h2><div class="setting-row"><div><strong>Narvie op je beginscherm</strong><p id="app-install-status">Open vanuit je browser of zet Narvie op je beginscherm.</p></div><a class="text-button" href="installeren.html">Installatie-uitleg</a></div><button class="button primary wide" data-action="install-app" hidden>Zet op mijn telefoon</button></section><div class="settings-note">${icon('info')} Onder Mijn tracker test je de echte leveranciersverbinding zodra de server is ingesteld. Bluetooth bedienen is nog niet aangesloten.</div>`;}
 
 function showAdd(){
   if(state.trackers.length>=100){toast('Je hebt het maximum van 100 voorbeeldtrackers bereikt.');return;}
   ui.addedKind='bike';
-  openDialog(`<div class="dialog-eyebrow">JE EERSTE STAP</div><div class="tracker-product"><div class="product-face"><span>narvie.</span><i></i></div><span class="product-shadow"></span><span class="product-spark">${icon('spark')}</span></div><h2 id="dialog-title">Een zorg minder.</h2><p>Geef je belangrijke spullen een eigen plek in Narvie.</p><div class="model-row"><span class="model-dot"></span><div><strong>Narvie Magnetic</strong><span>Voor trackers die nu MyTag gebruiken</span></div>${icon('check')}</div><div class="soft-notice">${icon('info')} Je voegt nu een voorbeeld toe. Je hebt geen code nodig en er wordt niets gekoppeld.</div><button class="button primary wide" data-action="add-next">Voorbeeldtracker toevoegen ${icon('chevron')}</button><button class="text-button dialog-cancel" data-action="close-dialog">Misschien later</button>`);
+  openDialog(`<div class="dialog-eyebrow">JE EERSTE STAP</div><div class="tracker-product"><div class="product-face"><span>narvie.</span><i></i></div><span class="product-shadow"></span><span class="product-spark">${icon('spark')}</span></div><h2 id="dialog-title">Een zorg minder.</h2><p>Geef je belangrijke spullen een eigen plek in Narvie.</p><div class="model-row"><span class="model-dot"></span><div><strong>Narvie Magnetic</strong><span>Voor trackers die nu MyTag gebruiken</span></div>${icon('check')}</div><div class="soft-notice">${icon('info')} Je voegt nu een voorbeeld toe. Je hebt geen code nodig en er wordt niets gekoppeld.</div><button class="button secondary wide" data-action="open-live">Mijn echte tracker testen</button><button class="button primary wide" data-action="add-next">Voorbeeldtracker toevoegen ${icon('chevron')}</button><button class="text-button dialog-cancel" data-action="close-dialog">Misschien later</button>`);
 }
 function addNext(){dialog.innerHTML=`<button class="icon-button dialog-close" data-action="close-dialog" aria-label="Sluiten">${icon('x')}</button><div class="dialog-eyebrow">MAAK ’M HERKENBAAR</div><h2 id="dialog-title">Waar gaat jouw<br>tracker mee naartoe?</h2><p>Kies een icoon en een naam die je direct herkent.</p><form id="add-form"><fieldset class="kind-picker"><legend>Waarvoor gebruik je de tracker?</legend>${Object.entries(kindNames).map(([k,label])=>`<label class="kind-choice"><input type="radio" name="kind" value="${k}" ${k==='bike'?'checked':''}><span>${icon(k)}<small>${label}</small></span></label>`).join('')}</fieldset><label class="field-label" for="tracker-name">Naam van je tracker</label><input class="text-input" id="tracker-name" name="name" placeholder="Bijvoorbeeld: Mijn fiets" value="Mijn fiets" maxlength="40" required autocomplete="off"><div class="field-hint">Maximaal 40 tekens. Je kunt dit later wijzigen.</div><p class="form-error" id="form-error" role="alert"></p><button class="button primary wide" type="submit">Voorbeeld bewaren ${icon('check')}</button><p class="dialog-footnote">Dit voegt alleen een voorbeeld toe op dit apparaat.</p></form>`;dialog.querySelector('#tracker-name').focus();}
 function showRename(){const t=current();openDialog(`<div class="dialog-eyebrow">ZO GEVONDEN</div><h2 id="dialog-title">Maak ’m herkenbaar.</h2><p>Kies een eigen naam en pictogram.</p><form id="rename-form"><fieldset class="kind-picker"><legend>Pictogram van je tracker</legend>${Object.entries(kindNames).map(([k,label])=>`<label class="kind-choice"><input type="radio" name="kind" value="${k}" ${k===t.kind?'checked':''}><span>${icon(k)}<small>${label}</small></span></label>`).join('')}</fieldset><label class="field-label" for="rename-name">Naam van je tracker</label><input class="text-input" id="rename-name" name="name" value="${esc(t.name)}" maxlength="40" required autocomplete="off"><p class="form-error" id="form-error" role="alert"></p><button class="button primary wide" type="submit">Naam en pictogram bewaren</button></form>`);dialog.querySelector('#rename-name').select();}
@@ -190,7 +194,9 @@ document.addEventListener('click',async e=>{
   const button=e.target.closest('[data-action]');if(!button||button.disabled)return;
   const action=button.dataset.action;
   if(button.tagName==='A')e.preventDefault();
-  if(action==='nav')navigate(button.dataset.page);
+  if(action.startsWith('live-')){await liveAction(action,null,renderMain);return;}
+  if(action==='open-live'){await closeDialog();navigate('live');await liveAction('live-status',null,renderMain);return;}
+  if(action==='nav'){navigate(button.dataset.page);if(button.dataset.page==='live')await liveAction('live-status',null,renderMain);}
   else if(action==='close-dialog')await closeDialog();
   else if(action==='about-demo')aboutDemo();
   else if(action==='add')showAdd();
@@ -219,6 +225,7 @@ document.addEventListener('click',async e=>{
 document.addEventListener('input',e=>{if(e.target.id==='search'){ui.query=e.target.value;updateBoard();}});
 document.addEventListener('change',e=>{if(e.target.name==='kind'){ui.addedKind=e.target.value;const name=dialog.querySelector('#tracker-name');if(name&&Object.values(kindNames).some(v=>name.value===`Mijn ${v.toLocaleLowerCase('nl')}`))name.value=`Mijn ${kindNames[ui.addedKind].toLocaleLowerCase('nl')}`;}});
 document.addEventListener('submit',async e=>{
+  if(e.target.id==='live-login-form'){e.preventDefault();const password=new FormData(e.target).get('password');e.target.reset();await liveAction('live-login',password,renderMain);return;}
   if(!['add-form','rename-form'].includes(e.target.id))return;e.preventDefault();
   const name=new FormData(e.target).get('name').trim();
   if(!name||name.length>40){dialog.querySelector('#form-error').textContent='Vul een naam in van maximaal 40 tekens.';return;}
@@ -229,3 +236,4 @@ document.addEventListener('submit',async e=>{
 Object.assign(ui,parseRoute(location.hash,state.trackers));
 history.replaceState({narvieMyTagDepth:0,narvieMyTagModal:false},'',routeFor(ui.page,ui.selected));
 shell();
+if(ui.page==='live')liveAction('live-status',null,renderMain);
