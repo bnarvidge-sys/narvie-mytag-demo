@@ -1,0 +1,23 @@
+{
+  "id": "/mytag/narvie-trackers",
+  "name": "Narvie Trackers",
+  "short_name": "Narvie Tags",
+  "description": "Narvie voor MyTag-trackers. Telefoonvoorbeeld met duidelijk gemarkeerde voorbeeldgegevens.",
+  "lang": "nl-NL",
+  "dir": "ltr",
+  "start_url": "/mytag/",
+  "scope": "/mytag/",
+  "display": "standalone",
+  "background_color": "#f7f8f2",
+  "theme_color": "#183e35",
+  "categories": ["utilities"],
+  "icons": [
+    {"src":"assets/icons/narvie-tags-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
+    {"src":"assets/icons/narvie-tags-512.png","sizes":"512x512","type":"image/png","purpose":"any"},
+    {"src":"assets/icons/narvie-tags-maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}
+  ],
+  "shortcuts": [
+    {"name":"Mijn trackers","url":"/mytag/#trackers"},
+    {"name":"Hulp","url":"/mytag/#hulp"}
+  ]
+}
