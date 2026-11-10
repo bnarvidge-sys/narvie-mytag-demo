@@ -16,13 +16,13 @@ const liveErrors={
 };
 const missingNames={owner_login:'Persoonlijke testaanmelding',vendor_token:'Leverancierstoken op de server',tracker_sn:'API-serienummer of testcode op de server',encoding_profile:'Berichtcodering',request_timezone:'Tijdzone voor verzoeken',timestamp_unit:'Tijdseenheid van locatiegegevens',api_version:'API-versie',vendor_https_url:'HTTPS-serveradres'};
 export class LiveTrackerClient {
-  constructor({fetchImpl=fetch,base='/api/mytag/'}={}) {this.fetch=fetchImpl;this.base=base;this.session=null;}
+  constructor({fetchImpl=(...args)=>fetch(...args),base='/api/mytag/'}={}) {this.fetch=fetchImpl;this.base=base;this.session=null;}
   async request(path,method='GET',body) {
     const headers={Accept:'application/json'};if(this.session)headers.Authorization=`Bearer ${this.session}`;
     if(body!==undefined)headers['Content-Type']='application/json';
     let response,data;
     try {
-      response=await this.fetch(new URL(path,new URL(this.base,location.href)),{method,headers,body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',credentials:'omit',redirect:'error',signal:AbortSignal.timeout(35_000)});
+      response=await this.fetch(new URL(path,new URL(this.base,location.href)),{method,headers,body:body===undefined?undefined:JSON.stringify(body),cache:'no-store',credentials:'omit',redirect:'error',signal:AbortSignal.timeout(path==='status'?75_000:35_000)});
       if(!(response.headers.get('content-type')||'').includes('application/json'))throw Error();
       data=await response.json();
     }catch {throw new Error(liveErrors.SERVER_UNAVAILABLE);}
@@ -42,11 +42,12 @@ export function liveScreen() {
   const s=testState,esc=escapeHtml,loggedIn=!!liveClient.session,o=s.location?.observation;
   return `<section class="page-heading"><div><div class="eyebrow">JOUW ECHTE TRACKER</div><h1>De eerste verbinding<span>.</span></h1><p>Afgeschermde test met één Narvie-tracker. Hier staan geen voorbeeldlocaties.</p></div></section>
   <section class="settings-card live-card" aria-busy="${s.busy}"><div class="live-state-label">${o?'Locatie ontvangen van leverancier':s.status?.ready?'Klaar om verbinding te testen':'Nog geen echte verbinding'}</div>
-  <h2>${esc(s.tracker?.name||'Mijn Narvie-testtracker')}</h2><p>Model: Magnetic · voor MyTag-appmodellen</p>
+  <h2>${esc(s.tracker?.name||'Mijn Narvie-testtracker')}</h2><p>Beoogd model: Magnetic · voor MyTag-appmodellen</p>
+  ${s.busy?'<p role="status">Verbinding controleren… De gratis testserver starten kan ongeveer één minuut duren.</p>':''}
   ${s.error?`<p class="live-error" role="alert">${esc(s.error)}</p>`:''}
   ${!s.checked?'<p>Controleer eerst of de testserver beschikbaar is.</p>':''}
   ${s.status&&!s.status.ready?`<div class="soft-notice">De server mist nog instellingen:<ul>${s.status.missing.map(key=>`<li>${esc(missingNames[key]||'Serverinstelling')}</li>`).join('')}</ul></div>`:''}
-  ${!loggedIn?`<form id="live-login-form"><label class="field-label" for="live-password">Persoonlijk testwachtwoord</label><input class="text-input" id="live-password" name="password" type="password" minlength="12" maxlength="256" autocomplete="current-password" required ${!s.status?.loginConfigured||s.busy?'disabled':''}><p class="field-hint">Dit is een eigen Narvie-testwachtwoord. Gebruik hier geen MyTag-wachtwoord, tracker-code of leverancierstoken.</p><button class="button primary" type="submit" ${!s.status?.loginConfigured||s.busy?'disabled':''}>Aanmelden voor de test</button></form>`:`<p>Ingesteld API-serienummer / testcode: <strong>${esc(s.tracker?.sn||'Nog niet ingesteld')}</strong></p><p class="field-hint">Een ingestelde code bewijst nog geen activering of eigendom. De leverancier moet toegang toestaan.</p><div class="live-actions"><button class="button primary" data-action="live-location" ${s.busy||!s.status?.ready?'disabled':''}>${s.busy?'Verbinding testen…':'Echte locatie opvragen'}</button><button class="button secondary" data-action="live-probe" ${s.busy||!s.status?.ready?'disabled':''}>Servertoegang testen</button><button class="text-button" data-action="live-logout" ${s.busy?'disabled':''}>Afmelden</button></div>`}
+  ${!loggedIn?`<form id="live-login-form"><label class="field-label" for="live-password">Persoonlijk testwachtwoord</label><input class="text-input" id="live-password" name="password" type="password" minlength="12" maxlength="256" autocomplete="current-password" required ${!s.status?.loginConfigured||s.busy?'disabled':''}><p class="field-hint">Dit is een eigen Narvie-testwachtwoord. Gebruik hier geen MyTag-wachtwoord, tracker-code of leverancierstoken.</p><button class="button primary" type="submit" ${!s.status?.loginConfigured||s.busy?'disabled':''}>Aanmelden voor de test</button></form>`:`<p>Ingesteld API-serienummer / testcode: <strong>${esc(s.tracker?.sn||'Nog niet ingesteld')}</strong></p><p class="field-hint">Een ingestelde code bewijst nog geen activering of eigendom. De leverancier moet toegang toestaan.</p><div class="live-actions"><button class="button primary" data-action="live-location" ${s.busy||!s.status?.ready?'disabled':''}>${s.busy?'Verbinding testen…':'Echte locatie opvragen'}</button><button class="button secondary" data-action="live-probe" ${s.busy||!s.status?.canProbe?'disabled':''}>Servertoegang testen</button><button class="text-button" data-action="live-logout" ${s.busy?'disabled':''}>Afmelden</button></div>`}
   <button class="text-button" data-action="live-status" ${s.busy?'disabled':''}>Serverstatus controleren</button>
   ${s.probe?'<p class="soft-notice" role="status">De leveranciersserver accepteert het token. Hiermee is toegang tot deze tracker nog niet bewezen.</p>':''}
   </section>
