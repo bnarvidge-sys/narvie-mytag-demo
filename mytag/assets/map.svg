@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 650" fill="none">
+<defs><pattern id="blocks" width="116" height="92" patternUnits="userSpaceOnUse" patternTransform="rotate(-22)"><rect width="116" height="92" fill="#eaece3"/><rect x="8" y="8" width="43" height="31" rx="4" fill="#e0e3d9"/><rect x="59" y="8" width="48" height="31" rx="4" fill="#e0e3d9"/><rect x="8" y="48" width="99" height="35" rx="4" fill="#e0e3d9"/><path d="M0 44H116M55 0V44" stroke="#f8f8f2" stroke-width="8"/></pattern></defs>
+<rect width="1000" height="650" fill="#e9eddf"/>
+<path d="M0 80L191 0H540L465 209 213 356 0 320Z" fill="#dce6cd"/>
+<path d="M650 0H1000V278L842 244 720 157Z" fill="#dce6cd"/>
+<path d="M670 430L1000 354V650H588Z" fill="#dbe5d0"/>
+<path d="M161 189L389 104 571 249 485 488 231 572 86 407Z" fill="url(#blocks)"/>
+<path d="M535 71L815 81 905 300 717 424 491 305Z" fill="url(#blocks)"/>
+<path d="M-20 532C148 496 146 337 306 296S595 300 639 129 761 81 1020 23" stroke="#bbd6d8" stroke-width="37"/>
+<path d="M-30 577C168 585 261 459 403 414S663 335 1030 342" stroke="#d1d5c7" stroke-width="25"/>
+<path d="M-30 577C168 585 261 459 403 414S663 335 1030 342" stroke="#faf9ef" stroke-width="17"/>
+<path d="M315-30C376 138 473 186 513 344S629 554 613 680" stroke="#d1d5c7" stroke-width="22"/>
+<path d="M315-30C376 138 473 186 513 344S629 554 613 680" stroke="#faf9ef" stroke-width="14"/>
+<path d="M-10 267L237 202 488 143 803 200 1020 141M143 670L211 468 398 323 632 253 811 0M713 670L783 454 927 335" stroke="#fcfcf6" stroke-width="9"/>
+<path d="M315 650L379 471 448 378 582 273 830 177 1000 139" stroke="#bdc4b6" stroke-width="4" stroke-dasharray="8 5"/>
+<g fill="#d0dfbf"><path d="M107 62L241 22 273 120 127 163Z"/><path d="M733 470L862 434 897 555 765 588Z"/><path d="M35 357L95 339 115 412 57 433Z"/></g>
+<g font-family="-apple-system,BlinkMacSystemFont,Arial,sans-serif" text-anchor="middle" fill="#88917c" font-size="14" letter-spacing="2"><text x="275" y="429" font-size="24" fill="#6b7763" letter-spacing="3">ALKMAAR</text><text x="672" y="180" font-size="19" fill="#6b7763">HEERHUGOWAARD</text><text x="390" y="72">BROEK OP LANGEDIJK</text><text x="813" y="530" font-size="12">PARK VAN LUNA</text><text x="158" y="105" font-size="12">GEESTMERAMBACHT</text><text x="442" y="550" font-size="11" transform="rotate(-35 442 550)">NOORDHOLLANDSCH KANAAL</text></g>
+<g fill="#fffdf5" stroke="#d0d4c5"><rect x="492" y="458" width="35" height="21" rx="5"/><rect x="124" y="517" width="35" height="21" rx="5"/></g><g fill="#949b87" font-family="Arial" font-size="10" text-anchor="middle"><text x="509" y="472">N242</text><text x="141" y="531">N9</text></g>
+</svg>
