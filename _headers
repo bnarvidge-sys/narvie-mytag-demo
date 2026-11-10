@@ -1,0 +1,10 @@
+/mytag/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'
+/mytag/sw.js
+  Cache-Control: no-cache
+/mytag/manifest.webmanifest
+  Cache-Control: no-cache
+/mytag/*.html
+  Cache-Control: no-cache
