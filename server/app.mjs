@@ -82,7 +82,7 @@ export function createHandler({config=configFromEnv(),vendor=new VendorClient(co
       if(route==='tracker'&&req.method==='GET')return json(200,{name:config.trackerName,sn:config.sn||null,snVerified:false,isDemo:false,capabilities:{location:readiness(config).ready,bluetooth:false,ring:false,batteryPercentage:false}});
       if(['probe','location'].includes(route)&&req.method==='POST') {
         // Only the server-configured sample. Client cannot enumerate SNs or set vendor URLs.
-        if(req.headers['content-length']&&req.headers['content-length']!=='0')return json(400,{error:'BODY_NOT_ALLOWED'});
+        if(req.headers['transfer-encoding']||(req.headers['content-length']&&req.headers['content-length']!=='0'))return json(400,{error:'BODY_NOT_ALLOWED'});
         if(!readiness(config).ready)return json(503,{error:'SERVER_NOT_CONFIGURED'});
         if(busy||now()-lastVendorAttempt<15_000)return json(429,{error:'WAIT_BEFORE_RETRY'});
         busy=true;lastVendorAttempt=now();
