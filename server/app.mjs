@@ -7,9 +7,14 @@ import {scryptSync,timingSafeEqual,randomBytes,createHash} from 'node:crypto';
 import {VendorClient,IntegrationError} from './vendor.mjs';
 
 export function configFromEnv(env=process.env) {
+  // Hosting secret option for a nontechnical owner. Hash at boot, never return it.
+  let passwordHash=env.NARVIE_OWNER_PASSWORD_HASH||'';
+  if(!passwordHash&&typeof env.NARVIE_OWNER_PASSWORD==='string'&&env.NARVIE_OWNER_PASSWORD.length>=12&&env.NARVIE_OWNER_PASSWORD.length<=256){
+    const salt=randomBytes(16);passwordHash=`scrypt:${salt.toString('hex')}:${scryptSync(env.NARVIE_OWNER_PASSWORD,salt,64).toString('hex')}`;
+  }
   const c={token:env.MYTAG_MERCHANT_TOKEN||'',baseURL:env.MYTAG_BASE_URL||'https://test.trackthat.top/',sn:env.MYTAG_TEST_SN||'',
     codec:env.MYTAG_CODEC_PROFILE||'',timeZone:env.MYTAG_REQUEST_TIMEZONE||'',timestampUnit:env.MYTAG_TIMESTAMP_UNIT||'',version:env.MYTAG_API_VERSION||'v1',
-    passwordHash:env.NARVIE_OWNER_PASSWORD_HASH||'',allowedOrigins:(env.NARVIE_ALLOWED_ORIGINS||'https://narvie-mytag-demo.onrender.com,https://narvie-mytag-test.onrender.com').split(',').map(v=>v.trim()),
+    passwordHash,allowedOrigins:(env.NARVIE_ALLOWED_ORIGINS||'https://narvie-mytag-demo.onrender.com,https://narvie-mytag-test.onrender.com').split(',').map(v=>v.trim()),
     trackerName:env.MYTAG_TEST_NAME||'Mijn Narvie-testtracker'};
   if(c.timeZone) try {new Intl.DateTimeFormat('en',{timeZone:c.timeZone});}catch {c.timeZone='';}
   return c;
@@ -24,7 +29,7 @@ export function readiness(c) {
   if(!['seconds','milliseconds'].includes(c.timestampUnit))missing.push('timestamp_unit');
   if(!['v1','v2'].includes(c.version))missing.push('api_version');
   if(c.baseURL!=='https://test.trackthat.top/')missing.push('vendor_https_url');
-  return {ready:!missing.length,missing,loginConfigured:validPasswordHash(c.passwordHash),isDemo:false,hardwareConnected:false,version:'0.3.0',scope:'single-owner-test'};
+  return {ready:!missing.length,canProbe:!missing.some(key=>!['tracker_sn','timestamp_unit','api_version'].includes(key)),missing,loginConfigured:validPasswordHash(c.passwordHash),isDemo:false,hardwareConnected:false,version:'0.3.1',scope:'single-owner-test'};
 }
 function validPasswordHash(hash) {return /^scrypt:[0-9a-f]{32}:[0-9a-f]{128}$/.test(hash);}
 function validPassword(password,hash) {
@@ -83,7 +88,7 @@ export function createHandler({config=configFromEnv(),vendor=new VendorClient(co
       if(['probe','location'].includes(route)&&req.method==='POST') {
         // Only the server-configured sample. Client cannot enumerate SNs or set vendor URLs.
         if(req.headers['transfer-encoding']||(req.headers['content-length']&&req.headers['content-length']!=='0'))return json(400,{error:'BODY_NOT_ALLOWED'});
-        if(!readiness(config).ready)return json(503,{error:'SERVER_NOT_CONFIGURED'});
+        if(!(route==='probe'?readiness(config).canProbe:readiness(config).ready))return json(503,{error:'SERVER_NOT_CONFIGURED'});
         if(busy||now()-lastVendorAttempt<15_000)return json(429,{error:'WAIT_BEFORE_RETRY'});
         busy=true;lastVendorAttempt=now();
         try {

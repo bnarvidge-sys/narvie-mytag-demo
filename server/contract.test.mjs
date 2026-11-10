@@ -93,3 +93,13 @@ test('normalization keeps location time distinct, battery categorical and missin
   assert.throws(()=>normalizeObservations([]),{code:'TIMESTAMP_UNIT_REQUIRED'});
   assert.equal(requestTime(date,'Asia/Shanghai'),'2026-11-10 20:00:00');
 });
+
+test('server secret password is hashed at boot and readiness never returns secrets',()=>{
+  const c=configFromEnv({NARVIE_OWNER_PASSWORD:password});
+  assert.match(c.passwordHash,/^scrypt:/);assert.equal(c.password,undefined);
+  assert.equal(readiness(c).loginConfigured,true);
+  assert.ok(!JSON.stringify(readiness(c)).includes(password));
+  assert.equal(readiness(configFromEnv({NARVIE_OWNER_PASSWORD:'short'})).loginConfigured,false);
+  const tokenOnly={...config,sn:'',timestampUnit:''};
+  assert.equal(readiness(tokenOnly).ready,false);assert.equal(readiness(tokenOnly).canProbe,true);
+});

@@ -26,7 +26,11 @@ MYTAG_REQUEST_TIMEZONE=<bevestigde tijdzone, bijvoorbeeld UTC of Asia/Shanghai>
 MYTAG_TIMESTAMP_UNIT=<seconds of milliseconds, leverancier bevestigt eenheid>
 MYTAG_API_VERSION=v1
 
-Het wachtwoord kiest de gebruiker zelf. Voer create-password-hash.py in een
+Het wachtwoord kiest de gebruiker zelf. Eenvoudige optie: stel alleen in
+Render de geheime variabele NARVIE_OWNER_PASSWORD in (12 tot 256 tekens).
+De server leidt bij starten een scrypt-hash af en geeft die nooit aan de app.
+Alternatief zonder leesbaar wachtwoord in de hostingconfiguratie:
+voer create-password-hash.py in een
 terminal uit; de invoer is verborgen. Alleen de resulterende scrypt-hash in
 Render zetten. Het wachtwoord nooit in broncode, logs of URL plaatsen.
 De demo vraagt niet om een MyTag-wachtwoord of een leverancierstoken.
