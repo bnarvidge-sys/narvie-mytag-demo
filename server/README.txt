@@ -1,4 +1,4 @@
-NARVIE MYTAG - PERSOONLIJKE TRACKERTEST 0.3.0
+NARVIE MYTAG - PERSOONLIJKE TRACKERTEST 0.3.2
 
 Geen GPS666-code, geen bestaande MyTag-aanmelding en geen tracker-reset.
 Deze backend kan één vooraf ingestelde eigen tracker bevragen. Klantenaccounts,
@@ -73,3 +73,25 @@ BEPERKINGEN EN BEVEILIGING
   Xcode voor iOS/signing en echte toesteltests. Capacitor-config is geen build.
 
 Het token en het echte labelnummer zijn bewust afwezig in deze repository.
+
+AANVULLING NA LEVERANCIERSCHAT 11 NOVEMBER 2026
+- De 10-cijferige code is een Auth-code, geen bevestigd API-SN.
+- MYTAG_TEST_AUTH_CODE: uitsluitend afgeschermde metadata voor de eigenaar.
+- MYTAG_TEST_SN: leeg tot leverancier het juiste SN geeft.
+- MYTAG_SN_ASSIGNED_TO_TOKEN=yes: pas instellen na leveranciersbevestiging.
+- Zonder bevestigde toewijzing geen locatieverzoek; tokenprobe kan wel.
+- Leverancier bevestigt: testserver heeft alleen HTTP, geen IP-allowlist nodig.
+  Officiële URL/token worden bij bestelling verstrekt en vragen IP-allowlisting.
+- HTTP blijft standaard geblokkeerd. De exacte testhost kan alleen na
+  afzonderlijke expliciete toestemming worden ingeschakeld met beide waarden:
+    MYTAG_BASE_URL=http://test.trackthat.top/
+    MYTAG_ALLOW_HTTP_TEST=yes
+  Alleen voor tijdelijke sampletest. Token staat in een HTTP-header en is dus
+  op die laatste verbinding niet door TLS beschermd. Nooit stil terugvallen.
+- De C#- en Java-bron bevestigen UTF-8 key/data, ECB, PKCS7/equivalent
+  Java-PKCS5 en standaard Base64. Geen complete request-testvector ontvangen.
+- Activering sample via MyTag, dan SN-toewijzing leverancier, wachten op hun
+  toestemming voordat de sample wordt ontkoppeld. Geen reset/firmwarewijziging.
+- Nieuwe CityTag-PDF bevat vijf commando's (piepen, SN, batterij, MAC, firmware),
+  maar geen GATT-UUID's, notificatieprofiel of veilige pairingprocedure.
+- Geen HTTP-test werkelijk uitgevoerd bij het voorbereiden van deze optie.

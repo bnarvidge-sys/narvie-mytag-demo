@@ -8,7 +8,7 @@ import {createHandler,configFromEnv,readiness} from '../server/app.mjs';
 
 const salt=Buffer.alloc(16,42),password='test-only-password-not-production';
 const passwordHash=`scrypt:${salt.toString('hex')}:${scryptSync(password,salt,64).toString('hex')}`;
-const config={...configFromEnv({}),token:'test-merchant-not-real',sn:'SAMPLE000001',passwordHash,codec:'md5hex-ascii24-base64',timeZone:'UTC',timestampUnit:'seconds',version:'v1'};
+const config={...configFromEnv({}),token:'test-merchant-not-real',sn:'SAMPLE000001',passwordHash,codec:'md5hex-ascii24-base64',timeZone:'UTC',timestampUnit:'seconds',version:'v1',assignmentConfirmed:true};
 const date=new Date('2026-11-10T12:00:00Z');
 async function call(handler,path,{method='GET',body,session,origin='https://narvie-mytag-demo.onrender.com',extraHeaders={}}={}) {
   const text=body===undefined?'':JSON.stringify(body);
@@ -74,7 +74,7 @@ test('transport refuses HTTP, unknown host, redirects, malformed data and access
   let calls=0;
   for(const baseURL of ['http://test.trackthat.top/','https://evil.test/','https://test.trackthat.top/?token=x']){
     const client=new VendorClient({...config,baseURL},{fetchImpl:async()=>{calls++;}});
-    await assert.rejects(client.probe(),{code:'VENDOR_HTTPS_REQUIRED'});
+    await assert.rejects(client.probe(),{code:baseURL==='http://test.trackthat.top/'?'VENDOR_HTTP_TEST_NOT_APPROVED':'VENDOR_HTTPS_REQUIRED'});
   }
   assert.equal(calls,0);
   const client=new VendorClient(config,{fetchImpl:async()=>new Response(JSON.stringify({success:false,msg:'private detail',code:'bad'}))});
@@ -102,4 +102,24 @@ test('server secret password is hashed at boot and readiness never returns secre
   assert.equal(readiness(configFromEnv({NARVIE_OWNER_PASSWORD:'short'})).loginConfigured,false);
   const tokenOnly={...config,sn:'',timestampUnit:''};
   assert.equal(readiness(tokenOnly).ready,false);assert.equal(readiness(tokenOnly).canProbe,true);
+});
+
+test('HTTP test transport requires an explicit flag and is restricted to the exact test host',async()=>{
+  let called='';const c={...config,baseURL:'http://test.trackthat.top/',allowHttpTest:true};
+  const client=new VendorClient(c,{fetchImpl:async(url)=>{called=String(url);return Response.json({success:true,code:'0000',unique:'fixture'});}});
+  await client.probe();assert.equal(called,'http://test.trackthat.top/v1/Mer/GTagToken');
+  assert.equal(readiness(c).vendorTransport,'http-test');
+  assert.equal(readiness({...c,allowHttpTest:false}).canProbe,false);
+  for(const baseURL of ['http://other.test/','http://test.trackthat.top:8080/','http://test.trackthat.top/?x=1','http://user:pass@test.trackthat.top/']){
+    const rejected=new VendorClient({...c,baseURL},{fetchImpl:async()=>{throw Error('must not fetch');}});
+    await assert.rejects(rejected.probe(),{code:'VENDOR_HTTPS_REQUIRED'});
+  }
+});
+test('Auth code never substitutes for SN, and assignment gates location before upstream calls',async()=>{
+  const c=configFromEnv({MYTAG_TEST_AUTH_CODE:'AUTH-CODE',MYTAG_TEST_SN:'AUTH-CODE'});assert.equal(c.sn,'');
+  assert.ok(readiness(c).missing.includes('tracker_sn'));assert.ok(readiness(c).missing.includes('tracker_assignment'));
+  let calls=0;const pending=new VendorClient({...config,assignmentConfirmed:false},{fetchImpl:async()=>{calls++;}});
+  await assert.rejects(pending.location(),{code:'TRACKER_ASSIGNMENT_REQUIRED'});assert.equal(calls,0);
+  assert.equal(readiness({...config,assignmentConfirmed:false}).canProbe,true);
+  assert.equal(readiness({...config,assignmentConfirmed:false}).ready,false);
 });

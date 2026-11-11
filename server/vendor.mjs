@@ -1,8 +1,19 @@
-// Tag Data Protocol v2.3.3. Candidate encoding profile, not yet vendor-vector verified.
+// Tag Data Protocol v2.3.3 + supplied C#/Java helpers: UTF-8 key/data, ECB,
+// PKCS7 (Java calls the equivalent DES block padding PKCS5), standard Base64.
+// No supplier end-to-end request vector or timestamp convention received yet.
 import {createHash, createCipheriv, createDecipheriv, randomBytes, randomUUID} from 'node:crypto';
 
 export class IntegrationError extends Error {
   constructor(code, status=502) { super(code); this.code=code; this.status=status; }
+}
+export function vendorEndpoint(config) {
+  let url;try {url=new URL(config.baseURL);}catch {throw new IntegrationError('VENDOR_HTTPS_REQUIRED',503);}
+  if(url.href==='https://test.trackthat.top/')return url;
+  if(url.href==='http://test.trackthat.top/') {
+    if(config.allowHttpTest===true)return url;
+    throw new IntegrationError('VENDOR_HTTP_TEST_NOT_APPROVED',503);
+  }
+  throw new IntegrationError('VENDOR_HTTPS_REQUIRED',503);
 }
 export function deriveKey(random, token, unique='') {
   if(!/^[A-Za-z0-9]{16}$/.test(random)) throw new IntegrationError('INVALID_RANDOM');
@@ -53,8 +64,7 @@ export class VendorClient {
   async post(path,unique='') {
     const c=this.config;
     if(c.codec!=='md5hex-ascii24-base64'||!c.token||!c.timeZone) throw new IntegrationError('SERVER_NOT_CONFIGURED',503);
-    const base=new URL(c.baseURL);
-    if(base.protocol!=='https:'||base.username||base.password||base.search||base.hash||base.pathname!=='/'||base.hostname!=='test.trackthat.top') throw new IntegrationError('VENDOR_HTTPS_REQUIRED',503);
+    const base=vendorEndpoint(c);
     const random=this.random(),key=deriveKey(random,c.token,unique);
     const payload={guid:this.guid(),token:c.token,time:requestTime(this.now(),c.timeZone)};
     if(unique) Object.assign(payload,{unique,sn:c.sn});
@@ -75,6 +85,7 @@ export class VendorClient {
     return {unique:data.unique};
   }
   async location() {
+    if(this.config.assignmentConfirmed!==true)throw new IntegrationError('TRACKER_ASSIGNMENT_REQUIRED',503);
     if(!this.config.sn||!/^[A-Za-z0-9_-]{4,64}$/.test(this.config.sn)) throw new IntegrationError('TRACKER_NOT_CONFIGURED',503);
     const {unique}=await this.probe();
     const {data,key}=await this.post(this.config.version==='v2'?'/v2/Mer/GTagGps':'/v1/Mer/GTagGps',unique);
