@@ -1,1 +1,26 @@
-{"name": "narvie-mytag-test-server", "version": "0.3.0", "private": true, "type": "module", "engines": {"node": ">=22"}, "scripts": {"start": "node server/app.mjs", "test": "node --test"}}
+{
+  "name": "narvie-mytag-app",
+  "version": "0.3.4",
+  "private": true,
+  "type": "module",
+  "description": "Independent Dutch Narvie MyTag app foundation. Demo UI; no live hardware integration.",
+  "scripts": {
+    "preview": "python3 serve.py",
+    "build:phone": "python3 build_phone.py --skip-qr",
+    "test": "node --test tests/*.test.js",
+    "native:ios": "cap add ios",
+    "native:android": "cap add android",
+    "native:sync": "cap sync",
+    "open:ios": "cap open ios",
+    "open:android": "cap open android",
+    "start": "node server/app.mjs"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
+    "@capacitor/android": "^8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.0.0"
+  }
+}
