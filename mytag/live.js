@@ -6,7 +6,7 @@ const liveErrors={
   LOGIN_RATE_LIMITED:'Te veel aanmeldpogingen. Probeer het over 15 minuten opnieuw.',
   TOO_MANY_SESSIONS:'Er zijn te veel testsessies geopend. Probeer het later opnieuw.',
   SERVER_NOT_CONFIGURED:'De leverancierskoppeling is nog niet volledig ingesteld op de server.',
-  VENDOR_UNREACHABLE:'De leveranciersserver is niet bereikbaar via HTTPS. Er is geen locatie ontvangen.',
+  VENDOR_UNREACHABLE:'De ingestelde leveranciersserver is niet bereikbaar. Er is geen locatie ontvangen.',
   VENDOR_HTTP_ERROR:'De leveranciersserver gaf een fout. Er is geen locatie ontvangen.',
   VENDOR_ACCESS_REJECTED:'De leverancier heeft het verzoek geweigerd. Controleer token, SN-toewijzing, tijdinstelling en berichtcodering.',
   VENDOR_ENCODING_UNVERIFIED:'Het leveranciersantwoord kon niet worden ontsleuteld. De berichtcodering moet worden gecontroleerd.',
@@ -30,7 +30,8 @@ export class LiveTrackerClient {
     }catch {throw new Error(liveErrors.SERVER_UNAVAILABLE);}
     if(!response.ok) {
       if(response.status===401)this.session=null;
-      throw new Error(liveErrors[data.error]||'De testverbinding is niet gelukt. Er is geen nieuwe locatie ontvangen.');
+      const detail=/^\d{4}$/.test(data.vendorCode||'')&&['token','location'].includes(data.operation)?` Leverancierscode ${data.vendorCode} bij de ${data.operation==='token'?'tokencontrole':'locatieaanvraag'}.`:'';
+      throw new Error((liveErrors[data.error]||'De testverbinding is niet gelukt. Er is geen nieuwe locatie ontvangen.')+detail);
     }
     return data;
   }
@@ -49,7 +50,7 @@ export function liveScreen() {
   ${s.error?`<p class="live-error" role="alert">${esc(s.error)}</p>`:''}
   ${!s.checked?'<p>Controleer eerst of de testserver beschikbaar is.</p>':''}
   ${s.status&&!s.status.ready?`<div class="soft-notice">De server mist nog instellingen:<ul>${s.status.missing.map(key=>`<li>${esc(missingNames[key]||'Serverinstelling')}</li>`).join('')}</ul></div>`:''}
-  ${!loggedIn?`<form id="live-login-form"><label class="field-label" for="live-password">Persoonlijk testwachtwoord</label><input class="text-input" id="live-password" name="password" type="password" minlength="12" maxlength="256" autocomplete="current-password" required ${!s.status?.loginConfigured||s.busy?'disabled':''}><p class="field-hint">Dit is een eigen Narvie-testwachtwoord. Gebruik hier geen MyTag-wachtwoord, tracker-code of leverancierstoken.</p><button class="button primary" type="submit" ${!s.status?.loginConfigured||s.busy?'disabled':''}>Aanmelden voor de test</button></form>`:`<dl class="live-values"><dt>Auth-code</dt><dd>${esc(s.tracker?.authCode||'Nog niet ingesteld')}</dd><dt>API-serienummer</dt><dd>${esc(s.tracker?.sn||'Wachten op leverancier')}</dd></dl><p class="field-hint">De Auth-code is geen API-serienummer. Laat de tracker in MyTag gekoppeld totdat de leverancier het serienummer heeft toegewezen en toestemming geeft om te ontkoppelen.</p><div class="live-actions"><button class="button primary" data-action="live-location" ${s.busy||!s.status?.ready?'disabled':''}>${s.busy?'Verbinding testen…':'Echte locatie opvragen'}</button><button class="button secondary" data-action="live-probe" ${s.busy||!s.status?.canProbe?'disabled':''}>Servertoegang testen</button><button class="text-button" data-action="live-logout" ${s.busy?'disabled':''}>Afmelden</button></div>`}
+  ${!loggedIn?`<form id="live-login-form"><label class="field-label" for="live-password">Persoonlijk testwachtwoord</label><input class="text-input" id="live-password" name="password" type="password" minlength="12" maxlength="256" autocomplete="current-password" required ${!s.status?.loginConfigured||s.busy?'disabled':''}><p class="field-hint">Dit is een eigen Narvie-testwachtwoord. Gebruik hier geen MyTag-wachtwoord, tracker-code of leverancierstoken.</p><button class="button primary" type="submit" ${!s.status?.loginConfigured||s.busy?'disabled':''}>Aanmelden voor de test</button></form>`:`<dl class="live-values"><dt>Auth-code</dt><dd>${esc(s.tracker?.authCode||'Nog niet ingesteld')}</dd><dt>API-serienummer</dt><dd>${esc(s.tracker?.sn||'Wachten op leverancier')}</dd></dl><p class="field-hint">De Auth-code is geen API-serienummer. ${s.tracker?.assignmentConfirmed?'De leverancier bevestigt de SN-toewijzing. Ontkoppel de sample alleen uit MyTag nadat de leverancier daarvoor toestemming heeft gegeven; reset hem niet.':'Laat de tracker in MyTag gekoppeld totdat de leverancier het serienummer heeft toegewezen en toestemming geeft om te ontkoppelen.'}</p><div class="live-actions"><button class="button primary" data-action="live-location" ${s.busy||!s.status?.ready?'disabled':''}>${s.busy?'Verbinding testen…':'Echte locatie opvragen'}</button><button class="button secondary" data-action="live-probe" ${s.busy||!s.status?.canProbe?'disabled':''}>Servertoegang testen</button><button class="text-button" data-action="live-logout" ${s.busy?'disabled':''}>Afmelden</button></div>`}
   <button class="text-button" data-action="live-status" ${s.busy?'disabled':''}>Serverstatus controleren</button>
   ${s.probe?'<p class="soft-notice" role="status">De leveranciersserver accepteert het token. Hiermee is toegang tot deze tracker nog niet bewezen.</p>':''}
   </section>
