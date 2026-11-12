@@ -8,6 +8,8 @@ export class IntegrationError extends Error {
     super(code); this.code=code; this.status=status;
     if(['token','location'].includes(details.operation))this.operation=details.operation;
     if(/^\d{4}$/.test(details.vendorCode||''))this.vendorCode=details.vendorCode;
+    if(['token-json','location-json','token-unique','location-records'].includes(details.stage))this.stage=details.stage;
+    if(['array','object','null','string','number','boolean','undefined'].includes(details.responseType))this.responseType=details.responseType;
   }
 }
 export function vendorEndpoint(config) {
@@ -42,7 +44,7 @@ export function requestTime(date,zone) {
 }
 const numeric=v=>typeof v==='number'&&Number.isFinite(v);
 export function normalizeObservations(rows,{timestampUnit,now=Date.now()}={}) {
-  if(!Array.isArray(rows)||rows.length>10_000) throw new IntegrationError('VENDOR_RESPONSE_INVALID');
+  if(!Array.isArray(rows)||rows.length>10_000) throw new IntegrationError('VENDOR_RESPONSE_INVALID',502,{operation:'location',stage:'location-records',responseType:rows===null?'null':Array.isArray(rows)?'array':typeof rows});
   if(!['seconds','milliseconds'].includes(timestampUnit)) throw new IntegrationError('TIMESTAMP_UNIT_REQUIRED',503);
   const observations=rows.flatMap(row=>{
     if(!row||!numeric(row.latitude)||!numeric(row.longitude)||Math.abs(row.latitude)>90||Math.abs(row.longitude)>180||!numeric(row.timestamp)||row.timestamp<=0) return [];
@@ -79,7 +81,7 @@ export class VendorClient {
     catch { throw new IntegrationError('VENDOR_UNREACHABLE'); }
     if(!response.ok) throw new IntegrationError('VENDOR_HTTP_ERROR');
     const text=await boundedText(response);
-    let data;try { data=JSON.parse(text); } catch { throw new IntegrationError('VENDOR_RESPONSE_INVALID'); }
+    let data;try { data=JSON.parse(text); } catch { throw new IntegrationError('VENDOR_RESPONSE_INVALID',502,{operation:unique?'location':'token',stage:unique?'location-json':'token-json'}); }
     if(!data||!['true',true].includes(data.success)||data.code!=='0000') throw new IntegrationError('VENDOR_ACCESS_REJECTED',502,{
       operation:path==='/v1/Mer/GTagToken'?'token':'location',
       vendorCode:typeof data?.code==='string'?data.code:''
@@ -88,7 +90,7 @@ export class VendorClient {
   }
   async probe() {
     const {data}=await this.post('/v1/Mer/GTagToken');
-    if(typeof data.unique!=='string'||!data.unique||data.unique.length>256) throw new IntegrationError('VENDOR_RESPONSE_INVALID');
+    if(typeof data.unique!=='string'||!data.unique||data.unique.length>256) throw new IntegrationError('VENDOR_RESPONSE_INVALID',502,{operation:'token',stage:'token-unique',responseType:data.unique===null?'null':Array.isArray(data.unique)?'array':typeof data.unique});
     return {unique:data.unique};
   }
   async location() {

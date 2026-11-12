@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {Readable} from 'node:stream';
 import {scryptSync} from 'node:crypto';
 import {readFileSync,existsSync} from 'node:fs';
-import {VendorClient,deriveKey,encryptJSON,decryptJSON,normalizeObservations,requestTime} from '../server/vendor.mjs';
+import {VendorClient,IntegrationError,deriveKey,encryptJSON,decryptJSON,normalizeObservations,requestTime} from '../server/vendor.mjs';
 import {createHandler,configFromEnv,readiness} from '../server/app.mjs';
 
 const salt=Buffer.alloc(16,42),password='test-only-password-not-production';
@@ -92,6 +92,20 @@ test('normalization keeps location time distinct, battery categorical and missin
   assert.equal(normalizeObservations([],{timestampUnit:'milliseconds',now}).state,'no_location');
   assert.throws(()=>normalizeObservations([]),{code:'TIMESTAMP_UNIT_REQUIRED'});
   assert.equal(requestTime(date,'Asia/Shanghai'),'2026-11-10 20:00:00');
+});
+
+test('confirmed millisecond timestamps remain exact and malformed records expose only safe type information',async()=>{
+  const now=date.getTime();
+  const result=normalizeObservations([{latitude:0,longitude:0,timestamp:now-1234}],{timestampUnit:'milliseconds',now});
+  assert.equal(result.observation.observedAt,new Date(now-1234).toISOString());
+  const c={...config,timestampUnit:'milliseconds'};
+  const handler=createHandler({config:c,vendor:{location:async()=>normalizeObservations({private:'secret location'},{timestampUnit:'milliseconds'})}});
+  const login=await call(handler,'/api/mytag/session',{method:'POST',body:{password}});
+  const reply=await call(handler,'/api/mytag/location',{method:'POST',session:login.body.session});
+  assert.deepEqual(reply.body,{error:'VENDOR_RESPONSE_INVALID',operation:'location',stage:'location-records',responseType:'object'});
+  assert.equal(reply.headers['cache-control'],'no-store');
+  const unsafe=new IntegrationError('VENDOR_RESPONSE_INVALID',502,{stage:'secret',responseType:'secret',vendorCode:'secret'});
+  assert.equal(unsafe.stage,undefined);assert.equal(unsafe.responseType,undefined);assert.equal(unsafe.vendorCode,undefined);
 });
 
 test('server secret password is hashed at boot and readiness never returns secrets',()=>{
