@@ -1,15 +1,13 @@
-12 november 2026 - native sampletest 0.4.1
+12 november 2026 — native sampletest 0.4.2
 
-SUCCEEDED: Xcode26.6/iPhoneOS26.5 device build, arm64, iOS17 minimum.
-Command: xcodebuild -project native-ios/NarvieMyTagTest.xcodeproj
- -scheme NarvieMyTagTest -configuration Debug -sdk iphoneos
- -destination generic/platform=iOS -derivedDataPath /tmp/narvie-mytag-ios-build
- CODE_SIGNING_ALLOWED=NO build
+Unsigned arm64 iPhoneOS build: SUCCEEDED with Xcode 26.6 / iPhoneOS 26.5 SDK, minimum iOS 17.
+Signed build: built, installed and started on the owner’s physically connected iPhone through Xcode, using the owner-approved Personal Team. Developer-certificate trust confirmed by the owner.
+The foreground view capture showed Native sampletest 0.4.2 and the Bluetooth tab. Execution was resumed and Xcode reported Running.
 
-14 protocol checks passed (including supplier firmware vector and delay). No physical BLE checks performed.
-No signature/provisioning, no iPhone installation, no native UI execution test.
-No Android build. PWA/backend remain 0.3.2.
+This version opens Bluetooth-test first. After manual device selection it attempts serial, firmware and battery reads, using the documented two-second battery wait. No automatic ring command is sent.
+14 protocol checks previously passed; no protocol decoder changes in this version. Local build and UI launch do not prove a BLE response.
+Physical BLE serial/battery/ring: NOT YET VERIFIED.
+Android native build: NOT YET BUILT.
+Web version: 0.3.4, deployed separately.
 
-Next: open project in Xcode, select the owner's iPhone and signing team,
-then Run. User handles any Apple agreement or new credential entry.
-Supplier confirmed token mapping and permits unpairing on 12 November.
+Supplier confirms this dual-network sample may remain paired in MyTag; do not unpair or reset it for this test.
