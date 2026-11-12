@@ -21,6 +21,11 @@ struct NearbyTag: Identifiable {
     @Published var measurementStarted = false
     @Published var status = "Nog geen Bluetooth-verbinding."
     @Published var selectedName: String?
+    @Published private(set) var savedTrackers: [SavedTracker] = []
+    @Published private(set) var expectedSerial: String?
+    @Published private(set) var batteryReadAt: Date?
+    private let store = SavedTrackerStore()
+    private var pendingReconnect: SavedTracker?
     private var central: CBCentralManager?
     private var peripherals: [UUID:CBPeripheral] = [:]
     private var active: CBPeripheral?
@@ -33,8 +38,62 @@ struct NearbyTag: Identifiable {
     private var awaitingPower = false
     private var generation = UUID()
 
+    override init() {
+        super.init()
+        savedTrackers = store.load()
+    }
+    var canOperate: Bool { TrackerIdentity.canOperate(ready:ready,busy:busy,serial:serial,expected:expectedSerial) }
+    func saved(_ serial: String) -> SavedTracker? { savedTrackers.first {$0.serial == serial} }
+    @discardableResult func remember(name: String, symbol: String) -> Bool {
+        guard let serial, let active, ready, TrackerIdentity.matches(expected:expectedSerial,read:serial) else { return false }
+        let cleanName = String(name.trimmingCharacters(in:.whitespacesAndNewlines).prefix(60))
+        let tag = SavedTracker(serial:serial,peripheralID:active.identifier,name:cleanName,symbol:symbol,
+            firmware:firmware,battery:battery,batteryReadAt:batteryReadAt,connectedAt:Date())
+        guard tag.valid else { return false }
+        var next = savedTrackers.filter {$0.serial != serial}; next.append(tag)
+        guard store.save(next) else { status = "De tracker kon niet lokaal worden bewaard."; return false }
+        savedTrackers = next; expectedSerial = serial
+        return true
+    }
+    func rename(_ serial: String, name: String, symbol: String) {
+        guard let i = savedTrackers.firstIndex(where:{$0.serial == serial}) else { return }
+        var next = savedTrackers
+        next[i].name = String(name.trimmingCharacters(in:.whitespacesAndNewlines).prefix(60)); next[i].symbol = symbol
+        if store.save(next) { savedTrackers = next }
+    }
+    func forget(_ serial: String) {
+        if self.serial == serial || expectedSerial == serial { disconnect() }
+        let next = savedTrackers.filter {$0.serial != serial}
+        if store.save(next) { savedTrackers = next }
+    }
+    private func updateRemembered() {
+        guard let serial, let active, let i = savedTrackers.firstIndex(where:{$0.serial == serial}) else { return }
+        var next = savedTrackers
+        next[i].peripheralID = active.identifier; next[i].connectedAt = Date()
+        if let firmware { next[i].firmware = firmware }
+        if let battery, let batteryReadAt { next[i].battery = battery; next[i].batteryReadAt = batteryReadAt }
+        if store.save(next) { savedTrackers = next }
+    }
+    func reconnect(_ tracker: SavedTracker) {
+        guard !connecting, !busy else { return }
+        disconnect(); expectedSerial = tracker.serial; pendingReconnect = tracker
+        if central == nil { central = CBCentralManager(delegate:self,queue:.main) }
+        else if central?.state == .poweredOn { beginReconnect() }
+        else { status = "Zet Bluetooth aan om opnieuw te verbinden." }
+    }
+    private func beginReconnect() {
+        guard let tracker = pendingReconnect else { return }
+        pendingReconnect = nil
+        guard let peripheral = central?.retrievePeripherals(withIdentifiers:[tracker.peripheralID]).first else {
+            status = "Deze iPhone herkent het Bluetooth-adres niet meer. Voeg je eigen tracker opnieuw toe; het serienummer blijft de controle."; return
+        }
+        peripherals[peripheral.identifier] = peripheral
+        connect(NearbyTag(id:peripheral.identifier,name:tracker.name,rssi:0),expected:tracker.serial)
+    }
+
     func scan() {
         guard !connecting, !ready, !busy else { return }
+        pendingReconnect = nil; expectedSerial = nil
         devices = []; peripherals = [:]
         if central == nil {
             awaitingPower = true
@@ -56,25 +115,27 @@ struct NearbyTag: Identifiable {
     }
     func stopScan() {
         central?.stopScan(); scanning = false; scanDeadline?.cancel()
-        if !ready && !connecting { status = devices.isEmpty ? "Geen MyTag gevonden. Houd je eigen sample dichtbij en probeer opnieuw. Niet resetten of uit MyTag verwijderen." : "Kies uitsluitend je eigen sample. Een Bluetooth-naam bewijst geen eigendom." }
+        if !ready && !connecting { status = devices.isEmpty ? "Geen tracker gevonden. Houd je eigen tracker dichtbij en probeer opnieuw. Niet resetten of uit MyTag verwijderen." : "Kies jouw eigen tracker. Narvie leest daarna het serienummer ter controle." }
     }
-    func connect(_ device: NearbyTag) {
+    func connect(_ device: NearbyTag, expected: String? = nil) {
         guard !ready, !connecting, let peripheral = peripherals[device.id], central?.state == .poweredOn else { return }
-        stopScan(); clearValues(); selectedName = device.name
+        stopScan(); clearValues(); selectedName = device.name; expectedSerial = expected
         active = peripheral; peripheral.delegate = self; connecting = true
         status = "Verbinden en Bluetooth-profiel controleren…"
         central?.connect(peripheral)
         armDeadline(seconds:15, message:"Verbinden duurde te lang. Er is geen tracker gekoppeld.")
     }
     func disconnect() {
+        awaitingPower = false; pendingReconnect = nil
         stopScan(); deadline?.cancel(); batteryDelay?.cancel(); generation = UUID()
         if let active { central?.cancelPeripheralConnection(active) }
         active = nil; writeCharacteristic = nil; notificationCharacteristic = nil
         connecting = false; ready = false; busy = false; command = nil
-        clearValues(); selectedName = nil; status = "Bluetooth-verbinding gesloten. De MyTag-accountkoppeling is niet gewijzigd."
+        clearValues(); selectedName = nil; expectedSerial = nil
+        status = "Niet verbonden. Bewaarde gegevens tonen de laatste uitlezing."
     }
     func suspend() { disconnect() }
-    private func clearValues() { serial = nil; firmware = nil; battery = nil; measurementStarted = false }
+    private func clearValues() { serial = nil; firmware = nil; battery = nil; batteryReadAt = nil; measurementStarted = false }
     private func fail(_ message: String) { disconnect(); status = message }
     private func armDeadline(seconds:Int, message:String) {
         deadline?.cancel(); let id = generation
@@ -86,6 +147,7 @@ struct NearbyTag: Identifiable {
         }
     }
     func send(_ next: CityTagProtocol.Command) {
+        if next != .serial && !canOperate { return }
         guard ready, !busy, let active, active.state == .connected,
               let writeCharacteristic, let notificationCharacteristic,
               notificationCharacteristic.isNotifying, active.canSendWriteWithoutResponse else {
@@ -98,6 +160,8 @@ struct NearbyTag: Identifiable {
         active.writeValue(Data([next.rawValue]), for:writeCharacteristic, type:.withoutResponse)
     }
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        if central.state == .unknown || central.state == .resetting { status = "Bluetooth wordt voorbereid…"; return }
+        if central.state == .poweredOn, pendingReconnect != nil { beginReconnect(); return }
         if central.state == .poweredOn && awaitingPower { beginScan(); return }
         if central.state != .poweredOn {
             awaitingPower = false
@@ -158,12 +222,19 @@ struct NearbyTag: Identifiable {
         deadline?.cancel(); busy = false; self.command = nil
         switch reply {
         case .serial(let sn):
+            guard TrackerIdentity.matches(expected:expectedSerial,read:sn) else {
+                fail("Het serienummer komt niet overeen met jouw bewaarde tracker. Er zijn geen batterij- of geluidsopdrachten verstuurd."); return
+            }
             serial = sn; status = "Serienummer rechtstreeks via Bluetooth gelezen."
+            updateRemembered()
             send(.firmware)
         case .firmware(let version):
             firmware = version; status = "Firmwareversie rechtstreeks gelezen."
+            updateRemembered()
             if serial != nil && battery == nil { send(.batteryStart) }
-        case .battery(let percent): battery = percent; measurementStarted = false; status = "Batterijpercentage rechtstreeks via Bluetooth gelezen."
+        case .battery(let percent):
+            battery = percent; batteryReadAt = Date(); measurementStarted = false
+            updateRemembered(); status = "Verbonden. Batterij zojuist rechtstreeks uitgelezen."
         case .acknowledged:
             if command == .batteryStart {
                 battery = nil; measurementStarted = true; busy = true

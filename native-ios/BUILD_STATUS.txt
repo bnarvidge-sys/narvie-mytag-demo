@@ -1,13 +1,11 @@
-12 november 2026 — native sampletest 0.4.2
+12 november 2026 — native iPhone versie 0.5.0
 
-Unsigned arm64 iPhoneOS build: SUCCEEDED with Xcode 26.6 / iPhoneOS 26.5 SDK, minimum iOS 17.
-Signed build: built, installed and started on the owner’s physically connected iPhone through Xcode, using the owner-approved Personal Team. Developer-certificate trust confirmed by the owner.
-The foreground view capture showed Native sampletest 0.4.2 and the Bluetooth tab. Execution was resumed and Xcode reported Running.
+Unsigned arm64 iPhoneOS build: SUCCEEDED (Xcode 26.6, iPhoneOS 26.5 SDK, iOS 17 minimum).
+18 storage and serial-identity checks: PASSED. 14 protocol decoder checks: PASSED; raw BLE commands unchanged.
+Xcode signed device run: SUCCEEDED on the owner’s unlocked physical iPhone. Xcode reports Running. Visual inspection of the foreground UI is in progress. The save/reconnect hardware workflow still requires owner verification.
 
-This version opens Bluetooth-test first. After manual device selection it attempts serial, firmware and battery reads, using the documented two-second battery wait. No automatic ring command is sent.
-14 protocol checks previously passed; no protocol decoder changes in this version. Local build and UI launch do not prove a BLE response.
-Physical BLE serial/battery/ring: NOT YET VERIFIED.
-Android native build: NOT YET BUILT.
-Web version: 0.3.4, deployed separately.
+Added native tracker overview, one-time local save, names/icons, details, remembered-device reconnect with fresh serial verification, timestamped previous battery readings, local removal confirmation, Dutch help.
+Remote location still NOT VERIFIED. Supplier replies at 13:20 that they will check the decrypted response structure later.
 
-Supplier confirms this dual-network sample may remain paired in MyTag; do not unpair or reset it for this test.
+Previously verified on physical iPhone with 0.4.2: exact assigned sample serial, firmware 0.9.19, battery 98%, three audible beeps. This does not automatically verify the new persistence/reconnect workflow in 0.5.0.
+Android native: NOT BUILT. PWA/backend remain 0.3.4. Narvie 4G untouched.
