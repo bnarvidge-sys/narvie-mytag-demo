@@ -19,7 +19,7 @@ async function call(handler,path,{method='GET',body,session,origin='https://narv
 test('configuration never embeds user code or merchant credentials in web files',()=>{
   assert.equal(readiness(configFromEnv({})).ready,false);
   for(const file of ['app.js','live.js','adapters.js','sw.js']){
-    const source=readFileSync(new URL((existsSync(new URL('../www/',import.meta.url))?'../www/':'../mytag/')+file,import.meta.url),'utf8');
+    const source=readFileSync(new URL((existsSync(new URL('../www/'+file,import.meta.url))?'../www/':'../mytag/')+file,import.meta.url),'utf8');
     assert.ok(!/\b[0-9]{10}\b/.test(source));assert.ok(!source.includes(config.token));
   }
 });
