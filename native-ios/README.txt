@@ -1,4 +1,4 @@
-NARVIE MYTAG - NATIVE IPHONE SAMPLETEST 0.4.0
+NARVIE MYTAG - NATIVE IPHONE SAMPLETEST 0.4.1
 
 Dit is een afzonderlijke, kleine native testhuls rond de bestaande HTTPS-
 Narvie-interface. Geen wijziging aan Narvie 4G en geen GPS666-koppeling.
@@ -27,9 +27,12 @@ Write   00005302-0000-0041-4c50-574953450000 (WRITE NO RESPONSE)
 Notify  00005303-0000-0041-4c50-574953450000 (NOTIFY, descriptor 2902)
 Commando's: nieuwste CityTag_BLE_Instructions_EN_20260826.pdf (1 pagina).
 De foto betreft een leveranciersapparaat, niet bewezen de sample van gebruiker.
-Raw-byte framing, authenticatie, samplefirmware en meetduur nog niet bevestigd.
-Echte API-SN en token-toewijzing nog niet ontvangen. Geen accountbinding op basis
-van alleen een lokaal gelezen SN. Sample voorlopig in MyTag laten.
+Op 12 november bevestigt de leverancier het profiel voor de dual-network-sample:
+losse raw bytes zonder authenticatie, 0x41 twee seconden na 0x21, automatisch
+verbreken na 1 minuut inactiviteit. Firmwarevoorbeeld 82 00 09 13 is ontvangen.
+Echte API-SN en token-toewijzing zijn door leverancier bevestigd en uitsluitend
+server-side ingesteld. Leverancier geeft nu toestemming de sample uit MyTag
+te ontkoppelen. Geen accountbinding op basis van alleen een lokaal gelezen SN.
 
 BOUWEN
 Xcode staat hier in /Users/brad/Applications/Xcode.app (niet /Applications).
@@ -44,7 +47,8 @@ Een unsigned .app of geslaagde compilatie is geen geïnstalleerde telefoonapp.
 PROTOCOLCHECKS
 swiftc CityTagProtocol.swift ProtocolChecks.swift -o /tmp/narvie-protocol-checks
 /tmp/narvie-protocol-checks
-Dit controleert 12 synthetische grensgevallen; geen hardware-/transporttest.
+Dit controleert 14 gevallen, inclusief leveranciersfirmwarevector en wachttijd;
+geen hardware-/transporttest.
 
 ANDROID
 Het leveranciersprofiel en de decoder kunnen ook in de bestaande Capacitor-

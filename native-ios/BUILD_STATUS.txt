@@ -1,4 +1,4 @@
-11 november 2026 - native sampletest 0.4.0
+12 november 2026 - native sampletest 0.4.1
 
 SUCCEEDED: Xcode26.6/iPhoneOS26.5 device build, arm64, iOS17 minimum.
 Command: xcodebuild -project native-ios/NarvieMyTagTest.xcodeproj
@@ -6,10 +6,10 @@ Command: xcodebuild -project native-ios/NarvieMyTagTest.xcodeproj
  -destination generic/platform=iOS -derivedDataPath /tmp/narvie-mytag-ios-build
  CODE_SIGNING_ALLOWED=NO build
 
-12 synthetic protocol checks passed. No physical BLE checks performed.
+14 protocol checks passed (including supplier firmware vector and delay). No physical BLE checks performed.
 No signature/provisioning, no iPhone installation, no native UI execution test.
 No Android build. PWA/backend remain 0.3.2.
 
 Next: open project in Xcode, select the owner's iPhone and signing team,
 then Run. User handles any Apple agreement or new credential entry.
-Keep sample paired in MyTag until supplier confirms token mapping and unpairing.
+Supplier confirmed token mapping and permits unpairing on 12 November.

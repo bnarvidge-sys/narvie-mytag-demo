@@ -42,7 +42,7 @@ struct BluetoothTestView: View {
             List {
                 Section {
                     Text("Je eigen tracker, dichtbij.").font(.title2.bold()).foregroundStyle(green)
-                    Text("Native sampletest · 0.4.0").font(.caption)
+                    Text("Native sampletest · 0.4.1").font(.caption)
                     Text("Alleen echte Bluetooth-antwoorden. Dit verbindt lokaal; het activeert of koppelt geen tracker aan een account. Laat de MyTag-koppeling staan.")
                     Toggle("Ik test uitsluitend mijn eigen sample",isOn:$ownSample).disabled(ble.ready || ble.connecting)
                 }
@@ -60,7 +60,7 @@ struct BluetoothTestView: View {
                         }
                     }
                     if ble.ready || ble.connecting { Button("Verbinding sluiten") { ble.disconnect() } }
-                    Text("De naam of het signaal bewijst geen eigendom. Het profiel en de firmware van jouw sample zijn nog niet bevestigd.").font(.caption).foregroundStyle(.secondary)
+                    Text("De naam of het signaal bewijst geen eigendom. De leverancier bevestigt dit profiel voor de dual-network-sample; werking op jouw iPhone moet nog worden getest.").font(.caption).foregroundStyle(.secondary)
                 }
                 Section("Identiteit uitlezen") {
                     LabeledContent("Serienummer",value:ble.serial ?? "Nog niet gelezen")
@@ -71,14 +71,13 @@ struct BluetoothTestView: View {
                 }
                 Section("Batterij en geluid") {
                     LabeledContent("Batterij",value:ble.battery.map { "\($0)% · Bluetooth" } ?? "Onbekend")
-                    Button("1. Start batterijmeting") { ble.send(.batteryStart) }.disabled(!ble.ready || ble.busy || ble.serial == nil)
-                    Button("2. Lees meetresultaat") { ble.send(.batteryRead) }.disabled(!ble.ready || ble.busy || !ble.measurementStarted)
+                    Button("Lees batterij") { ble.send(.batteryStart) }.disabled(!ble.ready || ble.busy || ble.serial == nil)
                     Button("Laat mijn sample drie keer piepen") { ble.send(.ring) }.disabled(!ble.ready || ble.busy || ble.serial == nil)
-                    Text("De meetduur is nog niet bevestigd. Een bevestiging van de piepopdracht bewijst niet dat je het geluid daadwerkelijk hoort.").font(.caption).foregroundStyle(.secondary)
+                    Text("De batterij wordt twee seconden na de bevestigde start uitgelezen. Een bevestiging van de piepopdracht bewijst niet dat je het geluid daadwerkelijk hoort.").font(.caption).foregroundStyle(.secondary)
                 }
                 Section("Testgrenzen") {
-                    Text("De leverancier heeft het GATT-profiel en de commando's apart geleverd. Raw-byte framing en toepasbaarheid op jouw firmware moeten nog worden getest. Er worden geen reset-, ontkoppel-, firmware- of sleutelwijzigingen verstuurd.")
-                    Text("Scannen stopt na 12 seconden. De verbinding sluit zodra deze app naar de achtergrond gaat. Geen achtergrondtracking of GPS via deze Bluetooth-test.")
+                    Text("De leverancier bevestigt losse commandobytes zonder authenticatie voor de dual-network-sample. Er worden geen reset-, ontkoppel-, firmware- of sleutelwijzigingen verstuurd.")
+                    Text("Scannen stopt na 12 seconden. De tracker verbreekt na één minuut inactiviteit; de app sluit ook de verbinding zodra hij naar de achtergrond gaat. Geen achtergrondtracking of GPS via deze Bluetooth-test.")
                 }.font(.footnote)
             }.navigationTitle("Narvie Trackers").listStyle(.insetGrouped)
                 .onChange(of:phase) { _, next in if next != .active { ble.suspend() } }

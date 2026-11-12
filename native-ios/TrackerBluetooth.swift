@@ -29,6 +29,7 @@ struct NearbyTag: Identifiable {
     private var command: CityTagProtocol.Command?
     private var deadline: Task<Void,Never>?
     private var scanDeadline: Task<Void,Never>?
+    private var batteryDelay: Task<Void,Never>?
     private var awaitingPower = false
     private var generation = UUID()
 
@@ -66,7 +67,7 @@ struct NearbyTag: Identifiable {
         armDeadline(seconds:15, message:"Verbinden duurde te lang. Er is geen tracker gekoppeld.")
     }
     func disconnect() {
-        stopScan(); deadline?.cancel(); generation = UUID()
+        stopScan(); deadline?.cancel(); batteryDelay?.cancel(); generation = UUID()
         if let active { central?.cancelPeripheralConnection(active) }
         active = nil; writeCharacteristic = nil; notificationCharacteristic = nil
         connecting = false; ready = false; busy = false; command = nil
@@ -127,7 +128,7 @@ struct NearbyTag: Identifiable {
         guard peripheral === active else { return }; fail("De tracker kon niet worden verbonden. De MyTag-koppeling is niet gewijzigd.")
     }
     func centralManager(_ central:CBCentralManager, didDisconnectPeripheral peripheral:CBPeripheral, error:Error?) {
-        guard peripheral === active else { return }; fail("De Bluetooth-verbinding is verbroken. Zoek je eigen tracker opnieuw.")
+        guard peripheral === active else { return }; fail("De Bluetooth-verbinding is verbroken. Deze firmware verbreekt na één minuut inactiviteit. Zoek je eigen tracker opnieuw.")
     }
     func peripheral(_ peripheral:CBPeripheral, didDiscoverServices error:Error?) {
         guard peripheral === active else { return }
@@ -159,7 +160,18 @@ struct NearbyTag: Identifiable {
         case .firmware(let version): firmware = version; status = "Firmwareversie rechtstreeks gelezen."
         case .battery(let percent): battery = percent; measurementStarted = false; status = "Batterijpercentage rechtstreeks via Bluetooth gelezen."
         case .acknowledged:
-            if command == .batteryStart { battery = nil; measurementStarted = true; status = "Start meting bevestigd. De meetduur is nog niet bekend; vraag het resultaat handmatig op." }
+            if command == .batteryStart {
+                battery = nil; measurementStarted = true; busy = true
+                status = "Batterijmeting gestart. Na twee seconden wordt het resultaat opgevraagd…"
+                let id = generation
+                batteryDelay?.cancel()
+                batteryDelay = Task { [weak self] in
+                    try? await Task.sleep(for:.milliseconds(CityTagProtocol.batteryDelayMilliseconds))
+                    guard !Task.isCancelled, let self, self.generation == id, self.ready, self.measurementStarted else { return }
+                    self.busy = false
+                    self.send(.batteryRead)
+                }
+            }
             else { status = "Tracker bevestigt de piepopdracht. Controleer zelf of je drie piepjes hoort." }
         }
     }

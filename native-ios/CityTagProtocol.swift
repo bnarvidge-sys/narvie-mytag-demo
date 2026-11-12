@@ -1,7 +1,9 @@
 import Foundation
 
-// Supplier screenshot, 11 Nov 2026. Not yet verified on the owner's sample.
+// Supplier GATT screenshot 11 Nov and explicit dual-system/raw-byte confirmation 12 Nov 2026.
+// Still requires a physical test on the owner's sample.
 enum CityTagProtocol {
+    static let batteryDelayMilliseconds = 2000
     static let service = "00005301-0000-0041-4c50-574953450000"
     static let write = "00005302-0000-0041-4c50-574953450000"
     static let notify = "00005303-0000-0041-4c50-574953450000"
