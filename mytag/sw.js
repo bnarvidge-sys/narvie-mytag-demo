@@ -1,6 +1,6 @@
 // Only this app's declared static assets. No API/auth/location responses.
 const CACHE_PREFIX = 'narvie-mytag-pwa:/mytag/:';
-const CACHE = CACHE_PREFIX + '0.3.3';
+const CACHE = CACHE_PREFIX + '0.3.4';
 const ASSET_PATHS = [
   './', './index.html', './installeren.html', './installeren.css', './installeren.js',
   './live.js', './styles.css', './app.js', './store.js', './adapters.js', './routes.js', './pwa.js',
