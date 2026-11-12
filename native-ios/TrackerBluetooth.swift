@@ -40,7 +40,7 @@ struct NearbyTag: Identifiable {
             awaitingPower = true
             central = CBCentralManager(delegate:self, queue:.main)
         } else if central?.state == .poweredOn { beginScan() }
-        else { status = "Zet Bluetooth aan en controleer de toestemming bij Instellingen > Narvie Trackers." }
+        else { status = "Zet Bluetooth aan en controleer de toestemming bij Instellingen > Narvie Test." }
     }
     private func beginScan() {
         awaitingPower = false; scanning = true
@@ -104,7 +104,7 @@ struct NearbyTag: Identifiable {
             if active != nil { disconnect() }
             scanning = false
             switch central.state {
-            case .unauthorized: status = "Bluetooth-toestemming ontbreekt. Zet die aan bij Instellingen > Narvie Trackers."
+            case .unauthorized: status = "Bluetooth-toestemming ontbreekt. Zet die aan bij Instellingen > Narvie Test."
             case .unsupported: status = "Bluetooth wordt hier niet ondersteund. Gebruik een echte iPhone; de simulator kan geen tracker verbinden."
             case .poweredOff: status = "Bluetooth staat uit. Zet Bluetooth aan en zoek opnieuw."
             default: status = "Bluetooth wordt voorbereid. Zoek zo opnieuw."
@@ -149,15 +149,20 @@ struct NearbyTag: Identifiable {
         guard peripheral === active, characteristic === notificationCharacteristic else { return }
         guard error == nil, characteristic.isNotifying else { fail("Ontvangen van Bluetooth-antwoorden kon niet worden gestart."); return }
         deadline?.cancel(); connecting = false; ready = true
-        status = "Bluetooth-profiel gevonden. Lees nu het serienummer; dit activeert of bindt de tracker niet."
+        status = "Bluetooth-profiel gevonden. Serienummer uitlezen…"
+        send(.serial)
     }
     func peripheral(_ peripheral:CBPeripheral, didUpdateValueFor characteristic:CBCharacteristic, error:Error?) {
         guard peripheral === active, characteristic === notificationCharacteristic, let command else { return }
         guard error == nil, let value = characteristic.value, let reply = CityTagProtocol.decode(value,for:command) else { return }
         deadline?.cancel(); busy = false; self.command = nil
         switch reply {
-        case .serial(let sn): serial = sn; status = "Serienummer rechtstreeks via Bluetooth gelezen. Toewijzing aan de server is hiermee nog niet bevestigd."
-        case .firmware(let version): firmware = version; status = "Firmwareversie rechtstreeks gelezen."
+        case .serial(let sn):
+            serial = sn; status = "Serienummer rechtstreeks via Bluetooth gelezen."
+            send(.firmware)
+        case .firmware(let version):
+            firmware = version; status = "Firmwareversie rechtstreeks gelezen."
+            if serial != nil && battery == nil { send(.batteryStart) }
         case .battery(let percent): battery = percent; measurementStarted = false; status = "Batterijpercentage rechtstreeks via Bluetooth gelezen."
         case .acknowledged:
             if command == .batteryStart {

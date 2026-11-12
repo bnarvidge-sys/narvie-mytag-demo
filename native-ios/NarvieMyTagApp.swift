@@ -5,10 +5,11 @@ import WebKit
     var body: some Scene { WindowGroup { RootView() } }
 }
 struct RootView: View {
+    @State private var selectedTab = 1
     var body: some View {
-        TabView {
-            NarvieWebView().tabItem { Label("Mijn tracker",systemImage:"map") }
-            BluetoothTestView().tabItem { Label("Bluetooth-test",systemImage:"antenna.radiowaves.left.and.right") }
+        TabView(selection:$selectedTab) {
+            NarvieWebView().tag(0).tabItem { Label("Mijn tracker",systemImage:"map") }
+            BluetoothTestView().tag(1).tabItem { Label("Bluetooth-test",systemImage:"antenna.radiowaves.left.and.right") }
         }.tint(Color(red:0.09,green:0.24,blue:0.21))
     }
 }
@@ -42,8 +43,8 @@ struct BluetoothTestView: View {
             List {
                 Section {
                     Text("Je eigen tracker, dichtbij.").font(.title2.bold()).foregroundStyle(green)
-                    Text("Native sampletest · 0.4.1").font(.caption)
-                    Text("Alleen echte Bluetooth-antwoorden. Dit verbindt lokaal; het activeert of koppelt geen tracker aan een account. Laat de MyTag-koppeling staan.")
+                    Text("Native sampletest · 0.4.2").font(.caption)
+                    Text("Zoek eerst jouw eigen tracker hieronder. Voor deze Bluetooth-test is geen wachtwoord nodig. Laat Tas berge gekoppeld in MyTag en sluit de MyTag-app tijdens de test. Na je keuze leest Narvie het serienummer, de firmware en de batterij automatisch uit.")
                     Toggle("Ik test uitsluitend mijn eigen sample",isOn:$ownSample).disabled(ble.ready || ble.connecting)
                 }
                 Section("Verbinding") {
