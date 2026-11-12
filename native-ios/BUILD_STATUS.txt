@@ -2,7 +2,7 @@
 
 Unsigned arm64 iPhoneOS build: SUCCEEDED (Xcode 26.6, iPhoneOS 26.5 SDK, iOS 17 minimum).
 18 storage and serial-identity checks: PASSED. 14 protocol decoder checks: PASSED; raw BLE commands unchanged.
-Xcode signed device run: SUCCEEDED on the owner’s unlocked physical iPhone. Xcode reports Running. Visual inspection of the foreground UI is in progress. The save/reconnect hardware workflow still requires owner verification.
+Xcode signed device run: SUCCEEDED on the owner’s unlocked physical iPhone. Xcode reports Running. Xcode Devices lists Narvie Test build 7 installed. The new empty home screen was visually inspected on the iPhone 17e simulator. No complete simulator click-route claim: coordinate input returned noWindowsAvailable. The save/reconnect hardware workflow still requires owner verification.
 
 Added native tracker overview, one-time local save, names/icons, details, remembered-device reconnect with fresh serial verification, timestamped previous battery readings, local removal confirmation, Dutch help.
 Remote location still NOT VERIFIED. Supplier replies at 13:20 that they will check the decrypted response structure later.
