@@ -4,7 +4,11 @@
 import {createHash, createCipheriv, createDecipheriv, randomBytes, randomUUID} from 'node:crypto';
 
 export class IntegrationError extends Error {
-  constructor(code, status=502) { super(code); this.code=code; this.status=status; }
+  constructor(code, status=502, details={}) {
+    super(code); this.code=code; this.status=status;
+    if(['token','location'].includes(details.operation))this.operation=details.operation;
+    if(/^\d{4}$/.test(details.vendorCode||''))this.vendorCode=details.vendorCode;
+  }
 }
 export function vendorEndpoint(config) {
   let url;try {url=new URL(config.baseURL);}catch {throw new IntegrationError('VENDOR_HTTPS_REQUIRED',503);}
@@ -76,7 +80,10 @@ export class VendorClient {
     if(!response.ok) throw new IntegrationError('VENDOR_HTTP_ERROR');
     const text=await boundedText(response);
     let data;try { data=JSON.parse(text); } catch { throw new IntegrationError('VENDOR_RESPONSE_INVALID'); }
-    if(!data||!['true',true].includes(data.success)||data.code!=='0000') throw new IntegrationError('VENDOR_ACCESS_REJECTED');
+    if(!data||!['true',true].includes(data.success)||data.code!=='0000') throw new IntegrationError('VENDOR_ACCESS_REJECTED',502,{
+      operation:path==='/v1/Mer/GTagToken'?'token':'location',
+      vendorCode:typeof data?.code==='string'?data.code:''
+    });
     return {data,key};
   }
   async probe() {

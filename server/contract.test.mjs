@@ -123,3 +123,18 @@ test('Auth code never substitutes for SN, and assignment gates location before u
   assert.equal(readiness({...config,assignmentConfirmed:false}).canProbe,true);
   assert.equal(readiness({...config,assignmentConfirmed:false}).ready,false);
 });
+
+test('authenticated v2 rejection exposes only bounded code and operation, never vendor messages or token',async()=>{
+  const c={...config,version:'v2'};const paths=[];
+  const vendor=new VendorClient(c,{fetchImpl:async(url)=>{
+    paths.push(new URL(url).pathname);
+    return Response.json(paths.length===1?{success:true,code:'0000',unique:'test-unique'}:{success:false,code:'1002',msg:'secret '+c.token,data:'private-location'});
+  }});
+  const handler=createHandler({config:c,vendor});
+  const login=await call(handler,'/api/mytag/session',{method:'POST',body:{password}});
+  const result=await call(handler,'/api/mytag/location',{method:'POST',session:login.body.session});
+  assert.equal(result.status,502);assert.deepEqual(result.body,{error:'VENDOR_ACCESS_REJECTED',operation:'location',vendorCode:'1002'});
+  assert.deepEqual(paths,['/v1/Mer/GTagToken','/v2/Mer/GTagGps']);assert.equal(result.headers['cache-control'],'no-store');
+  const rejected=new VendorClient(c,{fetchImpl:async()=>Response.json({success:false,code:c.token,msg:'private'})});
+  await assert.rejects(rejected.probe(),error=>error.code==='VENDOR_ACCESS_REJECTED'&&error.operation==='token'&&error.vendorCode===undefined);
+});
