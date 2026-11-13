@@ -1,0 +1,50 @@
+name: Narvie Android APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['native-android/**', '.github/workflows/android.yml']
+permissions:
+  contents: read
+concurrency:
+  group: narvie-android-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Test, lint and build native Android
+        working-directory: native-android
+        run: gradle --no-daemon testDebugUnitTest assembleDebug lintDebug
+      - name: Prepare personal-test APK and checksum
+        run: |
+          mkdir -p android-output
+          cp native-android/build/outputs/apk/debug/*.apk android-output/Narvie-Trackers-Android-0.6.0.apk
+          cd android-output
+          sha256sum Narvie-Trackers-Android-0.6.0.apk > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Narvie-Trackers-Android-0.6.0
+          path: android-output/
+          retention-days: 1
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Android-test-reports
+          path: |
+            native-android/build/reports/tests/
+            native-android/build/reports/lint-results-debug.html
+          retention-days: 1
+          if-no-files-found: ignore
