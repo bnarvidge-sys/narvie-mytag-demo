@@ -29,6 +29,17 @@ jobs:
         run: gradle --no-daemon testDebugUnitTest assembleDebug lintDebug
       - name: Prepare personal-test APK and checksum
         run: |
+          python3 - <<'PY'
+          import glob, os, pathlib, xml.etree.ElementTree as ET
+          reports=[ET.parse(p).getroot() for p in glob.glob('native-android/build/test-results/testDebugUnitTest/TEST-*.xml')]
+          tests=sum(int(r.get('tests','0')) for r in reports)
+          failures=sum(int(r.get('failures','0'))+int(r.get('errors','0')) for r in reports)
+          assert tests >= 10 and failures == 0, (tests, failures)
+          assert list(pathlib.Path('native-android/build').rglob('MainActivity.class')), 'Native activity was not compiled'
+          print(f'{tests} unit tests passed; native MainActivity compiled. No physical-device test.')
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as out:
+              out.write(f'### Android validation\n{tests} unit tests passed. Native Activity compiled; APK assembled; lint passed.\n\nPhysical Android Bluetooth and map UI still require device testing.\n')
+          PY
           mkdir -p android-output
           cp native-android/build/outputs/apk/debug/*.apk android-output/Narvie-Trackers-Android-0.6.0.apk
           cd android-output
