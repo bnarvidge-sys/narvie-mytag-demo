@@ -1,11 +1,30 @@
-12 november 2026 — native iPhone versie 0.5.0
+13 November 2026 — native iPhone 0.6.0, build 8
 
-Unsigned arm64 iPhoneOS build: SUCCEEDED (Xcode 26.6, iPhoneOS 26.5 SDK, iOS 17 minimum).
-18 storage and serial-identity checks: PASSED. 14 protocol decoder checks: PASSED; raw BLE commands unchanged.
-Xcode signed device run: SUCCEEDED on the owner’s unlocked physical iPhone. Xcode reports Running. Xcode Devices lists Narvie Test build 7 installed. The new empty home screen was visually inspected on the iPhone 17e simulator. No complete simulator click-route claim: coordinate input returned noWindowsAvailable. The save/reconnect hardware workflow still requires owner verification.
+Unsigned arm64 iPhoneOS build: SUCCEEDED (Xcode 26.6, iOS 17 minimum).
+Xcode Devices lists Narvie Trackers build 8 installed on the connected physical
+iPhone. Signing and installation completed. A successful native-map login,
+rendered pin and complete click-route verification are NOT yet established.
+Native UI control subsequently timed out; do not infer app launch success from
+installation. Prior simulator process stayed visible separately in Xcode.
 
-Added native tracker overview, one-time local save, names/icons, details, remembered-device reconnect with fresh serial verification, timestamped previous battery readings, local removal confirmation, Dutch help.
-Remote location still NOT VERIFIED. Supplier replies at 13:20 that they will check the decrypted response structure later.
+Added native MapKit map, exact-serial location isolation, shared cloud client,
+transient owner login, location refresh, observation time/accuracy, route link,
+tracker selector, Bluetooth reconnect/ring and add flow from the map.
+24 location/identity checks passed. Device build succeeded after these changes.
+Existing BLE protocol and persistence code unchanged (14/18 earlier checks).
 
-Previously verified on physical iPhone with 0.4.2: exact assigned sample serial, firmware 0.9.19, battery 98%, three audible beeps. This does not automatically verify the new persistence/reconnect workflow in 0.5.0.
-Android native: NOT BUILT. PWA/backend remain 0.3.4. Narvie 4G untouched.
+REAL NETWORK RESULT
+13 November: authenticated owner web UI successfully displayed the assigned
+sample's real supplier location, observation time, 98m reported accuracy and
+high battery category. Codec and JSON envelope decoding verified against this
+response. No coordinates or vendor secrets stored in this status file.
+This proves the location API path, not every native map interaction.
+
+PREVIOUS HARDWARE RESULT
+0.4.2 on physical iPhone: exact serial matched, firmware 0.9.19, battery 98%,
+owner heard three beeps. Save/reconnect added in 0.5.0 still needs owner test.
+
+PWA 0.3.5 deployed live; backend 0.3.5 supplied the real location.
+Android SDK, Gradle and Java runtime absent; no native Android APK built.
+Narvie 4G untouched. Supplier permission confirmed by owner on 13 November.
+No outgoing supplier message sent today (owner requested read-only).

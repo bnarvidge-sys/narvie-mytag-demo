@@ -1,25 +1,48 @@
-Narvie Trackers — iPhone 0.5.0
+Narvie Trackers — iPhone 0.6.0, build 8
 
-Native SwiftUI / CoreBluetooth app, separate from Narvie 4G and the PWA.
-Bundle: nl.narvie.mytag.sampletest. Home-screen label remains Narvie Test during this personal test phase.
+SwiftUI / CoreBluetooth / MapKit. Separate from Narvie 4G. Bundle remains
+nl.narvie.mytag.sampletest, so this updates the existing personal sample app.
+Home screen label: Narvie Trackers.
 
 BUILD
-Open NarvieMyTagTest.xcodeproj in Xcode. Use the owner's authorized signing team and a connected, unlocked iPhone. A clean source project deliberately has no personal signing team. make_project.py recreates the unsigned project and icons; do not run it over an already signed project without preserving its local signing configuration.
+Open NarvieMyTagTest.xcodeproj. Use the existing authorized signing team and
+a connected unlocked iPhone. make_project.py creates an unsigned clean source
+project: do not overwrite a locally signed project without preserving signing.
+No supplier token, owner password, sample serial or private location in source.
 
-LOCAL WORKFLOW
-Open Mijn trackers > Mijn tracker toevoegen. Confirm that it is your own tracker, scan, manually select the sample and check its read serial. Give it a name and icon and tap Bewaar mijn tracker. This saves only local iPhone metadata; it does not activate or claim cloud ownership. No real sample identifiers or credentials are embedded in source.
-Saved tracker details provide Opnieuw verbinden, serial verification, ring, battery refresh, rename/icon and local removal. Reconnect uses CoreBluetooth retrievePeripherals for the remembered iOS UUID, then checks the actual SN before further commands. A changed/mismatched SN closes the connection. If iOS no longer knows the UUID, the owner re-adds the same physical tracker by scanning. No automatic selection of the strongest signal.
-The battery measurement has a real read timestamp. Saved values survive disconnect and reopening as previous readings, never as current location or presence. The active BLE values clear after disconnect. Ring is never automatic. Backgrounding closes BLE; no background tracking mode.
+MAP AND LOCATION
+Kaart replaces the old embedded web view. Explicitly request the last supplier
+observation with Locatie vernieuwen. Personal owner login uses the existing
+Narvie HTTPS API; password and session are not persisted. No new account.
+Only the configured assigned tracker is available remotely. A local saved tag
+never acquires cloud ownership merely by being saved. API locations appear
+only for an exact matching serial. Invalid/demo/future data never becomes a pin.
+No fake marker or current-phone-location permission. The default Netherlands
+viewport is only an empty map overview. Route opens Apple Maps after user click.
+Apple MapKit supplies map tiles; locations and API answers are not cached by us.
+Errors retain a previously received observation with its original date.
+The explicit refresh has supplier-side throttling; no automatic polling.
+13 November: real location successfully displayed through the owner web UI.
+Native map rendering/login still needs its own physical-device verification.
 
-LOCATION
-The Locatie tab embeds only the existing Narvie HTTPS owner test page using a nonpersistent WKWebView. No merchant token or owner password is stored in the app. The existing one-sample location API still waits for the supplier to clarify its decrypted v2 object schema. No fake coordinates or claims of remote location support.
-
-DATA
-Local UserDefaults key: nl.narvie.mytag.native.savedTrackers.v1. Serial, peripheral UUID, chosen name/icon, last measured battery/time and firmware are local metadata. No locations, tokens or passwords are persisted here. Removing a local tracker does not reset/unpair the hardware or change MyTag.
+LOCAL TRACKER
+Mijn trackers > toevoegen > confirm own tag > scan > manually choose > check
+read serial > choose name/icon > Bewaar mijn tracker. Reconnect verifies the
+actual SN before battery or ring commands. No strongest-signal auto-selection.
+Historical battery readings always have their original read timestamp.
+Local metadata: nl.narvie.mytag.native.savedTrackers.v1. Removing a local entry
+does not unpair, reset or change MyTag. Backgrounding closes BLE.
 
 CHECKS
-ProtocolChecks.swift: 14 parser checks. SavedTrackerChecks.swift: 18 storage/identity checks (isolated test defaults, no real hardware data). Compile these separately with CityTagProtocol.swift; the storage checks also require SavedTrackers.swift. Test helpers are not included in app Sources.
-0.4.2 hardware evidence: assigned SN matched, firmware 0.9.19, battery 98%, owner heard three beeps. 0.5.0 adds persistence/reconnect/UI; that new workflow needs its own device verification. See BUILD_STATUS.txt for the current installation status.
+14 protocol decoder checks, 18 storage/identity checks, 24 location/identity
+checks. Test helper mains are separate from app sources. The 24 location checks
+use synthetic data, not live coordinates. Unsigned arm64 device build succeeded.
+Physical hardware evidence from 0.4.2 remains: correct SN, firmware 0.9.19,
+98% battery, three audible beeps. New save/reconnect and native map interactions
+need separate device confirmation. See BUILD_STATUS.txt.
 
-ANDROID
-No native Android build is delivered by this iPhone project. The separate web/PWA interface remains available. Its iPhone Bluetooth limitations still apply; Capacitor config alone is not a native Android implementation.
+LIMITS
+Personal one-owner / one-assigned-SN backend, not customer account management.
+The supplier test hop remains explicitly approved HTTP; phone-to-Narvie is HTTPS.
+No background location, notifications or ownership-transfer implementation yet.
+Android native build is a separate route; PWA is not proof of Android native BLE.

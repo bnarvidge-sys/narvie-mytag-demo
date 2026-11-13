@@ -1,20 +1,19 @@
 import SwiftUI
-import WebKit
 
-private let narvieGreen = Color(red:0.09,green:0.24,blue:0.21)
-private let narvieCream = Color(red:0.97,green:0.97,blue:0.94)
+let narvieGreen = Color(red:0.09,green:0.24,blue:0.21)
+let narvieCream = Color(red:0.97,green:0.97,blue:0.94)
 
 @main struct NarvieMyTagApp: App {
     var body: some Scene { WindowGroup { RootView() } }
 }
 struct RootView: View {
     @StateObject private var ble = TrackerBluetooth()
+    @StateObject private var cloud = CloudLocation()
     @Environment(\.scenePhase) private var phase
     var body: some View {
         TabView {
+            TrackerMap(ble:ble,cloud:cloud).tabItem { Label("Kaart",systemImage:"map.fill") }
             TrackerHome(ble:ble).tabItem { Label("Mijn trackers",systemImage:"tag.fill") }
-            NavigationStack { NarvieWebView().navigationTitle("Locatie op afstand").navigationBarTitleDisplayMode(.inline) }
-                .tabItem { Label("Locatie",systemImage:"map") }
             TrackerHelp().tabItem { Label("Hulp",systemImage:"questionmark.circle") }
         }.tint(narvieGreen)
         .onChange(of:phase) { _, next in if next != .active { ble.suspend() } }
@@ -30,7 +29,7 @@ struct TrackerHome: View {
                     VStack(alignment:.leading,spacing:10) {
                         Text("Dicht bij wat telt.").font(.largeTitle.bold()).foregroundStyle(narvieGreen)
                         Text("Jouw trackers, op jouw manier.").foregroundStyle(.secondary)
-                        Label("Persoonlijke testversie · 0.5.0",systemImage:"sparkle").font(.caption).foregroundStyle(narvieGreen)
+                        Label("Persoonlijke versie · 0.6.0",systemImage:"sparkle").font(.caption).foregroundStyle(narvieGreen)
                     }.padding(.vertical,12)
                 }.listRowBackground(Color.clear).listRowSeparator(.hidden)
                 if ble.savedTrackers.isEmpty {
@@ -66,7 +65,7 @@ struct TrackerHome: View {
                     Button("Tracker toevoegen",systemImage:"plus") { adding = true }
                 }
                 Section {
-                    Label("Locatie op afstand wordt nog aangesloten.",systemImage:"map")
+                    Label("Vraag de laatste netwerkwaarneming op bij Kaart.",systemImage:"map")
                         .font(.subheadline).foregroundStyle(.secondary)
                     Text("De lokale bediening werkt via Bluetooth. Een Bluetooth-verbinding is geen locatie op de kaart.")
                         .font(.footnote).foregroundStyle(.secondary)
@@ -125,8 +124,8 @@ struct TrackerDetail: View {
                     Text("Dit is een gemeten batterijwaarde, geen live locatie. Na verbreken blijft de laatste uitlezing met dit tijdstip staan.").font(.caption).foregroundStyle(.secondary)
                 }
                 Section("Locatie") {
-                    Label("Nog geen bevestigde netwerkwaarneming",systemImage:"map").foregroundStyle(.secondary)
-                    Text("De locatiekoppeling wordt apart getest via het tabblad Locatie. Alleen de door de leverancier vrijgegeven testtracker is daar beschikbaar.")
+                    Label("Laatste netwerkwaarneming bij Kaart",systemImage:"map").foregroundStyle(.secondary)
+                    Text("Open het tabblad Kaart om de laatste netwerkwaarneming op te vragen. Alleen de aan jouw Narvie-toegang toegewezen tracker is op afstand beschikbaar.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 Section("Trackergegevens") {
@@ -251,7 +250,7 @@ struct TrackerHelp: View {
                     Text("Naam en pictogram worden alleen op deze iPhone bewaard. Je kunt meerdere eigen trackers lokaal bewaren. Elke batterijwaarde krijgt het tijdstip van de echte uitlezing; een oude waarde is geen live meting.")
                 }
                 Section("Locatie op afstand") {
-                    Text("Deze persoonlijke versie is nog geen volledige vervanging van MyTag. De serverkoppeling wacht op bevestiging van het antwoordformaat. Er wordt geen voorbeeldlocatie op de kaart gezet.")
+                    Text("Bij Kaart vraag je de laatst waargenomen locatie op. De datum laat zien hoe oud de waarneming is. Een verouderde locatie is geen actuele positie. Als de server geen bruikbare locatie geeft, verschijnt er geen nieuwe pin.")
                     Text("De locatieproef gebruikt een apart Narvie-testwachtwoord. Voor lokaal Bluetooth is geen wachtwoord nodig. Houd bestaande MyTag-koppelingen voorlopig intact.")
                 }
                 Section("Toestemming en privacy") {
@@ -260,27 +259,9 @@ struct TrackerHelp: View {
                 }
                 Section("Hulp nodig?") {
                     Link("contact@narvie-tracker.nl",destination:URL(string:"mailto:contact@narvie-tracker.nl")!)
-                    Text("Narvie Trackers · iPhone 0.5.0\nEigen MyTag-project · los van Narvie 4G").font(.caption).foregroundStyle(.secondary)
+                    Text("Narvie Trackers · iPhone 0.6.0\nPersoonlijke versie · los van Narvie 4G").font(.caption).foregroundStyle(.secondary)
                 }
             }.navigationTitle("Hoe kunnen we helpen?").navigationBarTitleDisplayMode(.inline)
-        }
-    }
-}
-struct NarvieWebView: UIViewRepresentable {
-    func makeUIView(context:Context) -> WKWebView {
-        let config = WKWebViewConfiguration(); config.websiteDataStore = .nonPersistent()
-        let view = WKWebView(frame:.zero,configuration:config); view.navigationDelegate = context.coordinator
-        view.load(URLRequest(url:URL(string:"https://narvie-mytag-demo.onrender.com/mytag/#echte-tracker")!))
-        return view
-    }
-    func updateUIView(_ uiView:WKWebView,context:Context) {}
-    func makeCoordinator() -> Coordinator { Coordinator() }
-    class Coordinator:NSObject,WKNavigationDelegate {
-        func webView(_ webView:WKWebView,decidePolicyFor action:WKNavigationAction,decisionHandler:@escaping(WKNavigationActionPolicy)->Void) {
-            guard let url = action.request.url else { decisionHandler(.cancel); return }
-            if url.scheme == "https" && url.host == "narvie-mytag-demo.onrender.com" { decisionHandler(.allow); return }
-            if action.navigationType == .linkActivated && ["https","mailto"].contains(url.scheme ?? "") { UIApplication.shared.open(url) }
-            decisionHandler(.cancel)
         }
     }
 }
