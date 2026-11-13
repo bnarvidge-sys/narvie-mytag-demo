@@ -1,8 +1,11 @@
 plugins { id 'com.android.application' version '8.9.2' }
 // Keep reviewable source files together; isolate Gradle source roots from build outputs.
-copy { from(['MainActivity.java','BleTracker.java','Protocol.java','TagStore.java','CloudClient.java']); into('prepared/main') }
-copy { from(['ProtocolTest.java','CloudClientTest.java']); into('prepared/test') }
-copy { from('narvie_icon.png'); into('prepared/res/drawable') }
+sync {
+    into('prepared')
+    from(['MainActivity.java','BleTracker.java','Protocol.java','TagStore.java','CloudClient.java']) { into('main/nl/narvie/mytag') }
+    from(['ProtocolTest.java','CloudClientTest.java']) { into('test/nl/narvie/mytag') }
+    from('narvie_icon.png') { into('res/drawable') }
+}
 android {
     namespace 'nl.narvie.mytag'
     compileSdk 35
