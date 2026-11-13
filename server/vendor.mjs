@@ -1,6 +1,6 @@
 // Tag Data Protocol v2.3.3 + supplied C#/Java helpers: UTF-8 key/data, ECB,
 // PKCS7 (Java calls the equivalent DES block padding PKCS5), standard Base64.
-// No supplier end-to-end request vector or timestamp convention received yet.
+// Supplier confirms 13-digit millisecond location time and additional JSON parsing (13 Nov).
 import {createHash, createCipheriv, createDecipheriv, randomBytes, randomUUID} from 'node:crypto';
 
 export class IntegrationError extends Error {
@@ -10,6 +10,7 @@ export class IntegrationError extends Error {
     if(/^\d{4}$/.test(details.vendorCode||''))this.vendorCode=details.vendorCode;
     if(['token-json','location-json','token-unique','location-records'].includes(details.stage))this.stage=details.stage;
     if(['array','object','null','string','number','boolean','undefined'].includes(details.responseType))this.responseType=details.responseType;
+    if(typeof details.shape==='string'&&details.shape.length<=320&&/^[A-Za-z0-9_:;, -]*$/.test(details.shape))this.shape=details.shape;
   }
 }
 export function vendorEndpoint(config) {
@@ -43,6 +44,30 @@ export function requestTime(date,zone) {
   return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
 }
 const numeric=v=>typeof v==='number'&&Number.isFinite(v);
+const kind=v=>v===null?'null':Array.isArray(v)?'array':typeof v;
+function shapeOf(value) {
+  // Authenticated diagnostics only: field names/types, never coordinates, values or messages.
+  if(!value||typeof value!=='object'||Array.isArray(value))return kind(value);
+  return Object.entries(value).slice(0,8).map(([key,v])=>`${/^[A-Za-z_][A-Za-z0-9_]{0,23}$/.test(key)?key:'other'}:${kind(v)}`).join(';');
+}
+export function locationRecords(value,depth=0) {
+  const invalid=()=>new IntegrationError('VENDOR_RESPONSE_INVALID',502,{operation:'location',stage:'location-records',responseType:kind(value),shape:shapeOf(value)});
+  if(depth>3)throw invalid();
+  if(Array.isArray(value)) {if(value.length>10_000)throw invalid();return value;}
+  if(typeof value==='string') {
+    if(value.length>1_000_000)throw invalid();
+    let parsed;try {parsed=JSON.parse(value);}catch {throw invalid();}
+    return locationRecords(parsed,depth+1);
+  }
+  if(value&&typeof value==='object') {
+    // Do not choose an arbitrary property or interpret a server error as a location.
+    if(Object.hasOwn(value,'success')||Object.hasOwn(value,'code'))throw invalid();
+    if(['latitude','longitude','timestamp'].every(key=>Object.hasOwn(value,key)))return [value];
+    const fields=['data','Data'].filter(key=>Object.hasOwn(value,key));
+    if(fields.length===1)return locationRecords(value[fields[0]],depth+1);
+  }
+  throw invalid();
+}
 export function normalizeObservations(rows,{timestampUnit,now=Date.now()}={}) {
   if(!Array.isArray(rows)||rows.length>10_000) throw new IntegrationError('VENDOR_RESPONSE_INVALID',502,{operation:'location',stage:'location-records',responseType:rows===null?'null':Array.isArray(rows)?'array':typeof rows});
   if(!['seconds','milliseconds'].includes(timestampUnit)) throw new IntegrationError('TIMESTAMP_UNIT_REQUIRED',503);
@@ -98,7 +123,7 @@ export class VendorClient {
     if(!this.config.sn||!/^[A-Za-z0-9_-]{4,64}$/.test(this.config.sn)) throw new IntegrationError('TRACKER_NOT_CONFIGURED',503);
     const {unique}=await this.probe();
     const {data,key}=await this.post(this.config.version==='v2'?'/v2/Mer/GTagGps':'/v1/Mer/GTagGps',unique);
-    return normalizeObservations(decryptJSON(data.data,key),{timestampUnit:this.config.timestampUnit,now:this.now().getTime()});
+    return normalizeObservations(locationRecords(decryptJSON(data.data,key)),{timestampUnit:this.config.timestampUnit,now:this.now().getTime()});
   }
 }
 async function boundedText(response) {

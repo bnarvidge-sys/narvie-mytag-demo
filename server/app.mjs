@@ -32,7 +32,7 @@ export function readiness(c) {
   if(!['seconds','milliseconds'].includes(c.timestampUnit))missing.push('timestamp_unit');
   if(!['v1','v2'].includes(c.version))missing.push('api_version');
   try {vendorEndpoint(c);}catch(error){missing.push(error.code==='VENDOR_HTTP_TEST_NOT_APPROVED'?'http_test_approval':'vendor_https_url');}
-  return {ready:!missing.length,canProbe:!missing.some(key=>!['tracker_sn','tracker_assignment','timestamp_unit','api_version'].includes(key)),missing,loginConfigured:validPasswordHash(c.passwordHash),isDemo:false,hardwareConnected:false,version:'0.3.4',scope:'single-owner-test',vendorTransport:c.baseURL==='http://test.trackthat.top/'?'http-test':'https'};
+  return {ready:!missing.length,canProbe:!missing.some(key=>!['tracker_sn','tracker_assignment','timestamp_unit','api_version'].includes(key)),missing,loginConfigured:validPasswordHash(c.passwordHash),isDemo:false,hardwareConnected:false,version:'0.3.5',scope:'single-owner-test',vendorTransport:c.baseURL==='http://test.trackthat.top/'?'http-test':'https'};
 }
 function validPasswordHash(hash) {return /^scrypt:[0-9a-f]{32}:[0-9a-f]{128}$/.test(hash);}
 function validPassword(password,hash) {
@@ -105,7 +105,8 @@ export function createHandler({config=configFromEnv(),vendor=new VendorClient(co
       ...(error instanceof IntegrationError&&error.operation?{operation:error.operation}:{}),
       ...(error instanceof IntegrationError&&error.vendorCode?{vendorCode:error.vendorCode}:{}),
       ...(error instanceof IntegrationError&&error.stage?{stage:error.stage}:{}),
-      ...(error instanceof IntegrationError&&error.responseType?{responseType:error.responseType}:{})
+      ...(error instanceof IntegrationError&&error.responseType?{responseType:error.responseType}:{}),
+      ...(error instanceof IntegrationError&&error.shape?{shape:error.shape}:{})
     });}
   };
 }

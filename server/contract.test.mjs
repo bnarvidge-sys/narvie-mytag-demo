@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {Readable} from 'node:stream';
 import {scryptSync} from 'node:crypto';
 import {readFileSync,existsSync} from 'node:fs';
-import {VendorClient,IntegrationError,deriveKey,encryptJSON,decryptJSON,normalizeObservations,requestTime} from '../server/vendor.mjs';
+import {VendorClient,IntegrationError,deriveKey,encryptJSON,decryptJSON,normalizeObservations,locationRecords,requestTime} from '../server/vendor.mjs';
 import {createHandler,configFromEnv,readiness} from '../server/app.mjs';
 
 const salt=Buffer.alloc(16,42),password='test-only-password-not-production';
@@ -106,6 +106,26 @@ test('confirmed millisecond timestamps remain exact and malformed records expose
   assert.equal(reply.headers['cache-control'],'no-store');
   const unsafe=new IntegrationError('VENDOR_RESPONSE_INVALID',502,{stage:'secret',responseType:'secret',vendorCode:'secret'});
   assert.equal(unsafe.stage,undefined);assert.equal(unsafe.responseType,undefined);assert.equal(unsafe.vendorCode,undefined);
+});
+
+test('decrypted JSON text and data envelopes produce validated observations without inventing a location',async()=>{
+  const row={latitude:0,longitude:0,timestamp:date.getTime(),batteryLevel:'02'};
+  for(const payload of [[row],JSON.stringify([row]),{data:JSON.stringify([row])},{Data:[row]},row]) {
+    assert.deepEqual(locationRecords(payload),[row]);
+    const result=normalizeObservations(locationRecords(payload),{timestampUnit:'milliseconds',now:date.getTime()});
+    assert.equal(result.observation.observedAt,date.toISOString());
+  }
+  assert.deepEqual(locationRecords({data:'[]'}),[]);
+  for(const payload of [null,{},'not JSON',{data:[],Data:[]},{success:false,data:[row]},{data:{data:{data:{data:'[]'}}}}]) {
+    assert.throws(()=>locationRecords(payload),{code:'VENDOR_RESPONSE_INVALID'});
+  }
+  try {locationRecords({unexpected:'private-token-location'});}catch(e){
+    assert.equal(e.shape,'unexpected:string');assert.ok(!JSON.stringify(e).includes('private-token-location'));
+  }
+  const c={...config,version:'v2',timestampUnit:'milliseconds'},random='0123456789ABCDEF',unique='fixture-unique';let count=0;
+  const client=new VendorClient(c,{random:()=>random,now:()=>date,fetchImpl:async()=>Response.json(++count===1?
+    {code:'0000',success:true,unique}:{code:'0000',success:true,data:encryptJSON({data:JSON.stringify([row])},deriveKey(random,c.token,unique))})});
+  assert.equal((await client.location()).state,'observation');
 });
 
 test('server secret password is hashed at boot and readiness never returns secrets',()=>{
