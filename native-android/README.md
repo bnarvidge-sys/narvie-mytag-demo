@@ -21,8 +21,8 @@ BLE scanning; no phone-GPS location is read. Android 12+ uses Nearby Devices.
 ## Build
 
 Single-module Java/Gradle project. Sources are kept in this directory with
-explicit `sourceSets`; package declarations remain `nl.narvie.mytag`. The icon
-copy task generates the Android resource directory. Open this directory in
+explicit `sourceSets`; package declarations remain `nl.narvie.mytag`. Gradle
+prepares isolated source/resource roots under `prepared/` before building. Open this directory in
 Android Studio, or with JDK 17, Gradle 8.11.1 and Android SDK 35 run:
 
 ```sh

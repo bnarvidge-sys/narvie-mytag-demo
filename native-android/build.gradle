@@ -1,18 +1,20 @@
 plugins { id 'com.android.application' version '8.9.2' }
+// Keep reviewable source files together; isolate Gradle source roots from build outputs.
+copy { from(['MainActivity.java','BleTracker.java','Protocol.java','TagStore.java','CloudClient.java']); into('prepared/main') }
+copy { from(['ProtocolTest.java','CloudClientTest.java']); into('prepared/test') }
+copy { from('narvie_icon.png'); into('prepared/res/drawable') }
 android {
     namespace 'nl.narvie.mytag'
     compileSdk 35
     defaultConfig { applicationId 'nl.narvie.mytag'; minSdk 26; targetSdk 35; versionCode 1; versionName '0.6.0' }
     sourceSets {
-        main { manifest.srcFile 'AndroidManifest.xml'; java.srcDirs = ['.']; java.includes = ['MainActivity.java','BleTracker.java','Protocol.java','TagStore.java','CloudClient.java']; res.srcDirs = ['build/generated/narvie-res'] }
-        test { java.srcDirs = ['.']; java.includes = ['ProtocolTest.java','CloudClientTest.java'] }
+        main { manifest.srcFile 'AndroidManifest.xml'; java.srcDirs = ['prepared/main']; res.srcDirs = ['prepared/res'] }
+        test { java.srcDirs = ['prepared/test'] }
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     buildTypes { release { minifyEnabled false } }
     lint { abortOnError true }
 }
-tasks.register('prepareNarvieIcon', Copy) { from('narvie_icon.png'); into(layout.buildDirectory.dir('generated/narvie-res/drawable')) }
-tasks.named('preBuild').configure { dependsOn('prepareNarvieIcon') }
 dependencies {
     implementation 'org.maplibre.gl:android-sdk:11.8.0'
     testImplementation 'junit:junit:4.13.2'
