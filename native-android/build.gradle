@@ -1,11 +1,21 @@
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+
 plugins { id 'com.android.application' version '8.9.2' }
 // Keep reviewable source files together; isolate Gradle source roots from build outputs.
-sync {
-    into('prepared')
-    from(['MainActivity.java','BleTracker.java','Protocol.java','TagStore.java','CloudClient.java']) { into('main/nl/narvie/mytag') }
-    from(['ProtocolTest.java','CloudClientTest.java']) { into('test/nl/narvie/mytag') }
-    from('narvie_icon.png') { into('res/drawable') }
+def sourceGroups = [
+    'main/nl/narvie/mytag': ['MainActivity.java','BleTracker.java','Protocol.java','TagStore.java','CloudClient.java'],
+    'test/nl/narvie/mytag': ['ProtocolTest.java','CloudClientTest.java'],
+    'res/drawable': ['narvie_icon.png']
+]
+sourceGroups.each { directory, names ->
+    names.each { filename ->
+        def destination = file("prepared/${directory}/${filename}")
+        destination.parentFile.mkdirs()
+        Files.copy(file(filename).toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
+    }
 }
+
 android {
     namespace 'nl.narvie.mytag'
     compileSdk 35
